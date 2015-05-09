@@ -1,3 +1,4 @@
+main=vectorAdd
 
-helloWorld: %: %.cu
+$(main): %: %.cu
 	nvcc $< -o $@ -gencode arch=compute_30,code=sm_30
