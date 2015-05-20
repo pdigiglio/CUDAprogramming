@@ -1,3 +1,7 @@
+/**
+ * @file integrator.h
+ * @brief Header for integrator methods.
+ */
 
 #ifndef INTEGRATOR_H_
 #define INTEGRATOR_H_
@@ -14,7 +18,7 @@
 int rungeKutta ( void );
 
 //__device__ __host__
-void leapfrogVerlet ( float *, float *, size_t );
+void leapfrogVerlet ( float *x, float *v, size_t N );
 
 /**
  * @brief Force.
@@ -23,6 +27,6 @@ void leapfrogVerlet ( float *, float *, size_t );
  * @param N Number of particles (i.e. size of `x` pointer)
  */
 //__device__ __host__
-float F ( float *, size_t );
+float F ( float *x, size_t N );
 
 #endif /* INTEGRATOR_H_ */
