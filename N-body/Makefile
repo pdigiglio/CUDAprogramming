@@ -1,10 +1,18 @@
-CPPFLAGS=
+CPPFLAGS= -Wall
 
 main: $(patsubst %.c,%.o,$(wildcard *.c)) $(patsubst %.cc,%.o,$(wildcard *.cc))
-	g++ -std=c++11 $+ -o $@
+	g++ $(CPPFLAGS) $+ -o $@
 
-%.o: %.cc Makefile
-	g++ -c $(CPPFLAGS) $< -o $@
+# want to build again modules even if (only) header is changed
+%.o: %.cc %.h Makefile
+	g++ $(CPPFLAGS) -c $< -o $@
 
 %.o: %.c Makefile
-	g++ -c $(CPPFLAGS) $< -o $@
+	g++ $(CPPFLAGS) -c $< -o $@
+
+# generate documentation with doxygen
+doc:
+	doxygen && make -C latex
+
+docshow: doc
+	evince latex/refman.pdf
