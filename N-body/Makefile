@@ -1,5 +1,7 @@
 CPPFLAGS= -Wall
 
+.PHONY: clean distclean doc docshow
+
 main: $(patsubst %.c,%.o,$(wildcard *.c)) $(patsubst %.cc,%.o,$(wildcard *.cc))
 	g++ $(CPPFLAGS) $+ -o $@
 
@@ -16,3 +18,9 @@ doc:
 
 docshow: doc
 	evince latex/refman.pdf
+
+clean:
+	rm --recursive --verbose --force *.o
+
+distclean: clean
+	rm --recursive --verbose --force main
