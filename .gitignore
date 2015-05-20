@@ -1,7 +1,15 @@
 # ignore everything...
 *
 
+!N-body*
+
 # ...but
+!README.md
 !Makefile
-!*.cu
 !.gitignore
+
+# file patterns
+!*.c
+!*.cc
+!*.h
+!*.cu
