@@ -15,6 +15,18 @@ void leapfrogVerlet ( float *x, float *v, size_t N ) {
 	}
 }
 
+const float functionCoeff[4]  = {
+	1.f * dt, // dummy value: it's not really used
+	.5f * dt,
+	.5f * dt,
+	1.f * dt
+};
+const float evolutionCoeff[4] = {
+	1.f * dt / 6.f,
+	2.f * dt / 6.f,
+	2.f * dt / 6.f,
+	1.f * dt / 6.f
+};
 	void
 rungeKutta ( float *x, float *v, size_t N ) {
 
@@ -23,42 +35,39 @@ rungeKutta ( float *x, float *v, size_t N ) {
 
 	for ( size_t i = 0; i < N; ++ i ) {
 	
+		// reset temporary variables 
 		incrementX = 0.f;
 		incrementV = 0.f;
+		
+		tmpX = 0.f;
+		tmpV = 0.f;
 
-		// k1
-		tmpX = v[i];
-		tmpV = F( x[i], N );
+		// TODO: consider loop unrolling
+		//
+		// This can't be vectorized but branching can be
+		// reduced
 
-		// save increment
-		incrementX += tmpX;
-		incrementV += tmpV;
+		// evaluate next value
+		for ( short j = 0; j < 4; ++ j ) {
+			tmpX = auxiliaryF( v[i] + functionCoeff[j] * tmpV );
+			tmpV =          F( x[i] + functionCoeff[j] * tmpX );
 
-		// k2
-		tmpX = v[i] + .5 * dt * tmpX;
-		tmpV = F( x[i] + .5 * dt * tmpV );
+			// save increment
+			incrementX += evolutionCoeff[j] * tmpX;
+			incrementV += evolutionCoeff[j] * tmpV;
+		}
 
-		// save increment
-		incrementX += 2 * tmpX;
-		incrementV += 2 * tmpV;
-
-		// k3
-		tmpX = v[i] + .5 * dt * tmpX;
-		tmpV = F( x[i] + .5 * dt * tmpV );
-
-		// save increment
-		incrementX += 2 * tmpX;
-		incrementV += 2 * tmpV;
-
-		// k4
-		tmpX = v[i] + dt * tmpX;
-		tmpV = F( x[i] + dt * tmpV );
-
-		x[i] += ( incrementX + tmpX ) * dt / 6;
-		v[i] += ( incrementV + tmpV ) * dt / 6;
+		x[i] += incrementX;
+		v[i] += incrementV;
 	}
 }
 
-float F ( float x, size_t N ) {
+	inline float
+F ( float x, size_t N ) {
 	return .5f;
+}
+
+	inline float
+auxiliaryF( float v, size_t N ) {
+	return v;
 }

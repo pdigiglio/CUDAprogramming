@@ -9,6 +9,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+extern const float functionCoeff[4];
+extern const float evolutionCoeff[4];
 /*
  * use literals for float
  */
@@ -27,6 +29,16 @@ void leapfrogVerlet ( float *x, float *v, size_t N );
  * @param N Number of particles (i.e. size of `x` pointer)
  */
 //__device__ __host__
-float F ( float x, size_t N = 1 );
+inline float F ( float x, size_t N = 1 );
+
+/**
+ * @brief Auxiliaty function for Runge-Kutta method.
+ *
+ * Since Newton's equation is a 2nd order differential
+ * equation, I'll just need an auxiliary function.
+ *
+ * @param v Called `v` since velocity will be passed
+ */
+inline float auxiliaryF ( float x, size_t N = 1 );
 
 #endif /* INTEGRATOR_H_ */
