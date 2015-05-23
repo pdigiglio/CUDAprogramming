@@ -7,6 +7,7 @@
 !README.md
 !Makefile
 !.gitignore
+!Doxyfile
 
 # file patterns
 !*.c
