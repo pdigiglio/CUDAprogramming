@@ -15,7 +15,7 @@
 #define dt .001f
 
 //__device__ __host__
-int rungeKutta ( void );
+void rungeKutta ( float *x, float *v, size_t N );
 
 //__device__ __host__
 void leapfrogVerlet ( float *x, float *v, size_t N );
@@ -27,6 +27,6 @@ void leapfrogVerlet ( float *x, float *v, size_t N );
  * @param N Number of particles (i.e. size of `x` pointer)
  */
 //__device__ __host__
-float F ( float *x, size_t N );
+float F ( float x, size_t N = 1 );
 
 #endif /* INTEGRATOR_H_ */
