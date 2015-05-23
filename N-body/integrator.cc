@@ -1,9 +1,16 @@
+/**
+ * @file integrator.cc
+ * @brief Implementation of integrator methods.
+ */
+
 #include "integrator.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 
 /**
+ * @brief Leapfrog-Verlet (approximate) differential equation solver implementation.
+ *
  * The position is intended to be at the step \f$j\f, the velocity
  * at step \f$j-1/2\f$. This function will evolve both by one time step.
  */
@@ -59,6 +66,9 @@ rungeKutta ( float *x, float *v, size_t N ) {
 	}
 }
 
+/**
+ * @brief Force.
+ */
 float F ( float x, size_t N ) {
 	return .5f;
 }
