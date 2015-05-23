@@ -11,9 +11,10 @@ main () {
 	float x[numOfParticles] = {};
 	float v[numOfParticles] = {};
 
-	for ( unsigned t = 0; t < 10; ++ t ) {
-		leapfrogVerlet( x, v, numOfParticles );
-		printf( "%f %f\n", x[0], v[0] );
+	for ( unsigned t = 0; t < 1000000; ++ t ) {
+//		leapfrogVerlet( x, v, numOfParticles );
+		rungeKutta( x, v, numOfParticles );
+		printf( "%u %f %f\n", t, x[0], v[0] );
 	}
 	return 0;
 }
