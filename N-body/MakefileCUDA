@@ -1,0 +1,38 @@
+CUDAFLAGS = -arch=sm_20
+CXXFLAGS  = -Wall
+
+CPPFLAGS  = $(CUDAFLAGS)
+
+OFLAGS      = -c
+CUDAOFLAGS  = -x cu -dc
+OBJECTFLAGS = $(CUDAOFLAGS)
+
+CXX=nvcc
+
+.PHONY: clean distclean doc docshow
+
+main: $(patsubst %.c,%.o,$(wildcard *.c)) $(patsubst %.cc,%.o,$(wildcard *.cc))
+	$(CXX) $(CPPFLAGS) $+ -o $@
+
+# want to build again modules even if (only) header is changed
+%.o: %.cc %.h Makefile
+	$(CXX) $(CPPFLAGS) $(OBJECTFLAGS) $< -o $@
+
+%.o: %.c Makefile
+	$(CXX) $(CPPFLAGS) $(OBJECTFLAGS) $< -o $@
+
+%.o: %.cu Makefile
+	$(CXX) $(CPPFLAGS) $(OBJECTFLAGS) $< -o $@
+
+# generate documentation with doxygen
+doc:
+	doxygen && make -C latex
+
+docshow: doc
+	evince latex/refman.pdf
+
+clean:
+	rm --recursive --verbose --force *.o
+
+distclean: clean
+	rm --recursive --verbose --force main
