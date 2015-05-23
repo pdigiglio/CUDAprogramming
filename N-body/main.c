@@ -6,9 +6,9 @@
 const unsigned int numOfParticles = 1;
 
 	int
-main () {
-
-//    printf("%s Starting...\n\n", argv[0]);
+main ( int argc, char *argv[] ) {
+	
+	printf("%s Starting...\n\n", argv[0]);
 
 	/* taken from 0_Simple/cudaOpenMp/cudaOpenMP.cu
     /////////////////////////////////////////////////////////////////
