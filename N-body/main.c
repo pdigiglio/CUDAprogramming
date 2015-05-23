@@ -46,7 +46,7 @@ main () {
 	for ( unsigned t = 0; t < 1000000; ++ t ) {
 //		leapfrogVerlet( x, v, numOfParticles );
 		rungeKutta( x, v, numOfParticles );
-		printf( "%u %.6f %.6f\n", t, x[0], v[0] );
+		printf( "%u %.6g %.6g\n", t, x[0], v[0] );
 	}
 
 	/*
