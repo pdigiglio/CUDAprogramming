@@ -5,7 +5,7 @@
 
 # ...but
 !README.md
-!Makefile
+!Makefile*
 !.gitignore
 
 # file patterns
