@@ -1,6 +1,6 @@
 COMMONFLAGS =
 
-CUDAFLAGS = -Xcompiler -fopenmp -arch=sm_30 -I/usr/local/cuda/samples/common/inc/
+CUDAFLAGS = -Xcompiler -fopenmp -arch=sm_20 -I/usr/local/cuda/samples/common/inc/
 CXXFLAGS  = -fopenmp -Wall
 
 CPPFLAGS  =  $(COMMONFLAGS) $(CUDAFLAGS)
