@@ -1,27 +1,29 @@
-CUDAFLAGS = -arch=sm_20
-CXXFLAGS  = -Wall
+COMMONFLAGS =
 
-CPPFLAGS  = $(CUDAFLAGS)
+CUDAFLAGS = -Xcompiler -fopenmp -arch=sm_30 -I/usr/local/cuda/samples/common/inc/
+CXXFLAGS  = -fopenmp -Wall
+
+CPPFLAGS  =  $(COMMONFLAGS) $(CUDAFLAGS)
 
 OFLAGS      = -c
 CUDAOFLAGS  = -x cu -dc
-OBJECTFLAGS = $(CUDAOFLAGS)
+OBJECTFLAGS = $(COMMONFLAGS) $(CUDAOFLAGS)
 
 CXX=nvcc
 
 .PHONY: clean distclean doc docshow
 
-main: $(patsubst %.c,%.o,$(wildcard *.c)) $(patsubst %.cc,%.o,$(wildcard *.cc))
+main: $(patsubst %.cu,%.o,$(wildcard *.cu)) $(patsubst %.c,%.o,$(wildcard *.c)) $(patsubst %.cc,%.o,$(wildcard *.cc))
 	$(CXX) $(CPPFLAGS) $+ -o $@
 
 # want to build again modules even if (only) header is changed
-%.o: %.cc %.h Makefile
+%.o: %.cc %.h MakefileCUDA
 	$(CXX) $(CPPFLAGS) $(OBJECTFLAGS) $< -o $@
 
-%.o: %.c Makefile
+%.o: %.c MakefileCUDA
 	$(CXX) $(CPPFLAGS) $(OBJECTFLAGS) $< -o $@
 
-%.o: %.cu Makefile
+%.o: %.cu MakefileCUDA
 	$(CXX) $(CPPFLAGS) $(OBJECTFLAGS) $< -o $@
 
 # generate documentation with doxygen
