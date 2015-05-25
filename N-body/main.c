@@ -50,8 +50,18 @@ main () {
 //	float x[numOfParticles] = {};
 //	float v[numOfParticles] = {};
 
+    /* event to get CUDA execution time */
+    cudaEvent_t start, stop;
+    cudaEventCreate( &start );
+    /* TODO checkError */
+    cudaEventCreate( &stop );
+    /* TODO checkError */
+
 	/* variable to control errors in CUDA calls */
 	cudaError_t errorCode = cudaSuccess;
+
+    /* record start (0 = default stream) */
+    cudaEventRecord( start, 0 );
 
     // variables to control block and grid dimension
     dim3  dimBlock( BLOCK_SIZE, BLOCK_SIZE );
@@ -63,6 +73,20 @@ main () {
 		exit( EXIT_FAILURE );
 	}
 
+    /* record stop on the same stream as start */
+    cudaEventRecord( stop, 0 );
+    /* wait till every thread is done */
+    cudaEventSynchronize( stop );
+    float elapsedTime;
+    cudaEventElapsedTime( &elapsedTime, start, stop );
+
+
+    fprintf( stderr, "CUDA kernel execution time: %g ms\n", elapsedTime );
+
+    cudaEventDestroy( start );
+    /* TODO checkError */
+    cudaEventDestroy( stop );
+    /* TODO checkError */
 
 //	for ( unsigned t = 0; t < 1000000; ++ t ) {
 //		leapfrogVerlet( x, v, numOfParticles );
