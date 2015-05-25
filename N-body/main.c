@@ -12,6 +12,9 @@
 
 //const unsigned int numOfParticles = 1;
 
+// TODO consider accepting these parameters as cmd-line args
+const unsigned short int BLOCK_SIZE = 16;
+const unsigned short int  GRID_SIZE = 1;
 	int
 main () {
 
@@ -50,7 +53,10 @@ main () {
 	/* variable to control errors in CUDA calls */
 	cudaError_t errorCode = cudaSuccess;
 
-	trial <<<1,1>>> ();
+    // variables to control block and grid dimension
+    dim3  dimBlock( BLOCK_SIZE, BLOCK_SIZE );
+    dim3   dimGrid( GRID_SIZE,  GRID_SIZE );
+	trial <<< dimGrid, dimBlock >>> ();
 	errorCode = cudaGetLastError();
 	if( errorCode != cudaSuccess ) {
 		fprintf( stderr, "%s\n", cudaGetErrorString( errorCode ) );
