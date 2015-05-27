@@ -9,12 +9,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-/** @brief Weights to evaluate the \f$k_j\f$. */
 extern const float functionCoeff[4];
-
-/** @brief Weights to evaluate the \f$x_{n+1}\f$. */
 extern const float evolutionCoeff[4];
-
 /*
  * use literals for float
  */
@@ -36,7 +32,7 @@ void leapfrogVerlet ( float *x, float *v, size_t N );
 inline float F ( float x, size_t N = 1 );
 
 /**
- * @brief Auxiliary function for Runge-Kutta method.
+ * @brief Auxiliaty function for Runge-Kutta method.
  *
  * Since Newton's equation is a 2nd order differential
  * equation, I'll just need an auxiliary function.
