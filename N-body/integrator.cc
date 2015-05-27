@@ -4,7 +4,7 @@
 #include <stdlib.h>
 
 /**
- * The position is intended to be at the step \f$j\f, the velocity
+ * The position is intended to be at the step \f$j\f$, the velocity
  * at step \f$j-1/2\f$. This function will evolve both by one time step.
  */
 //__device__  __host__
@@ -21,6 +21,7 @@ const float functionCoeff[4]  = {
 	.5f * dt,
 	1.f * dt
 };
+
 const float evolutionCoeff[4] = {
 	1.f * dt / 6.f,
 	2.f * dt / 6.f,
@@ -33,6 +34,15 @@ rungeKutta ( float *x, float *v, size_t N ) {
 	float tmpX = 0.f, incrementX = 0.f;
 	float tmpV = 0.f, incrementV = 0.f;
 
+	/**
+	 * @attention this loop and the inner one commute _only
+	 * if_ there is one particle or the force comes from an
+	 * external field.
+	 *
+	 * If it is not the case, to evaluate the \f$k_j\f$-values
+	 * the displacement of _all_ the particles has to be taken
+	 * into accout.
+	 */
 	for ( size_t i = 0; i < N; ++ i ) {
 	
 		// reset temporary variables 
@@ -67,6 +77,11 @@ F ( float x, size_t N ) {
 	return .5f;
 }
 
+/**
+ * @brief Auxiliary function for RK.
+ *
+ * It's just the identical function (for the speed, in this case).
+ */
 	inline float
 auxiliaryF( float v, size_t N ) {
 	return v;
