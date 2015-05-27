@@ -1,4 +1,7 @@
-CPPFLAGS= -Wall
+LIBS = -lglut -lGL -lGLEW -lm
+CPPFLAGS  = -Wall
+CPPFLAGS += $(LIBS)
+
 
 .PHONY: clean distclean doc docshow
 
