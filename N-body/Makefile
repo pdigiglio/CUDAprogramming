@@ -1,4 +1,4 @@
-LIBS = -lglut -lGL -lGLEW -lm
+LIBS = -lglut -lGL -lGLEW -lglfw -lm
 CPPFLAGS  = -Wall
 CPPFLAGS += $(LIBS)
 
