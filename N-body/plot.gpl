@@ -1,0 +1,7 @@
+n = 4
+fileName="gravHead.txt"
+set xlabel "x"
+set ylabel "y"
+set zlabel "t"
+
+splot for [i=0:n-1] fileName u (column(3*i+2)):(column(3*i+3)):($1/100) w lp title "Particle ".(i+1)
