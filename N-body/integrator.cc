@@ -2,19 +2,26 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <math.h>
 /**
  * The position is intended to be at the step \f$j\f, the velocity
  * at step \f$j-1/2\f$. This function will evolve both by one time step.
- */
+ 
 //__device__  __host__
-void leapfrogVerlet ( float *x, float *v, size_t N ) {
+template <size_t N, typename T>
+void leapfrogVerlet ( T *x, T *v ) {
+
 	for ( size_t i = 0; i < N; ++ i ) {
 		x[i] += v[i] * dt;
-		v[i] += F( x[i], N ) * dt; 
 	}
-}
 
+	T acceleration = F<N>( x, N );
+	for ( size_t i = 0; i < N; ++ i ) {
+		v[i] += acceleration * x[i] * dt; 
+	}
+
+}
+*/
 const float functionCoeff[4]  = {
 	1.f * dt, // dummy value: it's not really used
 	.5f * dt,
@@ -30,6 +37,7 @@ const float evolutionCoeff[4] = {
 	void
 rungeKutta ( float *x, float *v, size_t N ) {
 
+	/*
 	float tmpX = 0.f, incrementX = 0.f;
 	float tmpV = 0.f, incrementV = 0.f;
 
@@ -60,12 +68,24 @@ rungeKutta ( float *x, float *v, size_t N ) {
 		x[i] += incrementX;
 		v[i] += incrementV;
 	}
+	*/
 }
+/*
+	template < size_t N, typename T>
+	inline T
+F ( const float *x ) {
 
-	inline float
-F ( float x, size_t N ) {
-	return .5f;
+	/// Evaluate \f$r^2 = x^2 + y^2 + z^2\f$.
+	T tmp = x[0] * x[0];
+	tmp += x[1] * x[1];
+	tmp += x[2] * x[2] + EPS2;
+	
+
+	/// @return \f$1/r^3 = 1 / /r^2 \sqrt(r^2)\f$.
+	return - 1. / ( tmp * sqrtf( tmp ) );
+//	return .5f;
 }
+*/
 
 	inline float
 auxiliaryF( float v, size_t N ) {

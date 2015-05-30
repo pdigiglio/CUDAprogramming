@@ -1,9 +1,16 @@
+/**
+ * @file main.c
+ * @brief
+ */
+
 #include "integrator.h"
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <math.h>
 
-const unsigned int numOfParticles = 1;
+const unsigned int spaceDimension = 3;
+const unsigned int numOfParticles = 2; /* XXX this must be even! */
 
 	int
 main ( int argc, char *argv[] ) {
@@ -40,13 +47,32 @@ main ( int argc, char *argv[] ) {
 
 	*/
 
-	float x[numOfParticles] = {};
-	float v[numOfParticles] = {};
+	double x[ spaceDimension * numOfParticles ] = {
+		1., 0., 0.,
+//		-1., 0., 0.,
+//		1., 0., 0.,
+		-1., 0., 0.
+	};
+	double v[ spaceDimension * numOfParticles ] = {
+		0., 1., 0.,
+//		0., 0., 0.,
+//		0., 1., 0.,
+		0., 0., 0.
+	};
 
-	for ( unsigned t = 0; t < 1000000; ++ t ) {
-//		leapfrogVerlet( x, v, numOfParticles );
-		rungeKutta( x, v, numOfParticles );
-		printf( "%u %.6g %.6g\n", t, x[0], v[0] );
+	for ( unsigned t = 0; t < 1000; t += 10 ) {
+
+		for ( unsigned int j = 0; j < 100; ++ j ) {
+			leapfrogVerlet < numOfParticles, spaceDimension > ( x, v );
+	//		rungeKutta( x, v, numOfParticles );
+		}
+
+		printf( "%u ", t );
+		for( unsigned int i = 0; i < numOfParticles * spaceDimension;  i += 6 ) {
+			printf( "%.6g %.6g %.6g ", x[i ], x[i+1], x[i+2] );
+			printf( "%.6g %.6g %.6g ", x[i+3], x[i+4], x[i+5] );
+		}
+		printf( "\n" );
 	}
 
 	/*
