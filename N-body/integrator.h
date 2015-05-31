@@ -133,6 +133,64 @@ void leapfrogVerlet ( T *x, T *v ) {
 	}
 };
 
+/* TODO divide into blocks */
+//__device__ __host__
+template <size_t N, size_t BLOCK_SIZE, unsigned short D, typename T>
+void leapfrogVerletBlock ( T *x, T *v ) {
+
+	// ---------------------------------------------------------------------------------
+	/* XXX if N % 4 == 0 then thi loop can be unrolled by 4x */
+	/* evolve particles' position */
+	for ( size_t i = 0; i < N * D; ++ i ) {
+		x[i] += v[i] * dt;
+	}
+	// ---------------------------------------------------------------------------------
+
+	/* auxiliary variable to hold distance among particles */
+	T x_ij[D];
+	/* auxiliary variables for the inner/outer-loop particle */
+	T *x_j = NULL, *x_i = x;
+	T *v_j = NULL, *v_i = v;
+
+	for ( size_t i = 0; i < N; ++ i ) {
+		/* (re-)initialize x_j */
+		x_j = x;
+		v_j = v;
+
+		for( size_t j = 0; j < N; ++ j ) {
+
+			/* assign the distance among particles */
+			distance< D >( x_i, x_j, x_ij );
+			T acceleration = F< D >( x_ij );
+
+			// ---------------------------------------------------------------------
+			/*
+			 * XXX multiplying the vector by dt and acceleration x_ij in Distance
+			 * would save 6 flops
+			 */
+			/* update velocities */
+			v_i[0] += acceleration * x_ij[0] * dt;
+			v_i[1] += acceleration * x_ij[1] * dt;
+			v_i[2] += acceleration * x_ij[2] * dt;
+			
+
+//			v_j[0] -= acceleration * x_ij[0] * dt;
+//			v_j[1] -= acceleration * x_ij[1] * dt;
+//			v_j[2] -= acceleration * x_ij[2] * dt;
+			// ---------------------------------------------------------------------
+			
+
+			/* go to next D-tuple of coordinates */
+			x_j += D;
+			v_j += D;
+		}
+
+		/* go to next D-tuple of coordinates */
+		x_i += D;
+		v_i += D;
+	}
+};
+
 /**
  * @brief Auxiliaty function for Runge-Kutta method.
  *
