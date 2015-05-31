@@ -73,7 +73,7 @@ template <size_t N, unsigned short D, typename T>
 void leapfrogVerlet ( T *x, T *v ) {
 
 	// ---------------------------------------------------------------------------------
-	/* XXX if N %4 == 0 then thi loop can be unrolled */
+	/* XXX if N % 4 == 0 then thi loop can be unrolled by 4x */
 	/* evolve particles' position */
 	for ( size_t i = 0; i < N * D; ++ i ) {
 		x[i] += v[i] * dt;
@@ -105,6 +105,11 @@ void leapfrogVerlet ( T *x, T *v ) {
 //				v[d + D] -= acceleration * x_ij[d] * dt; 
 //			}
 
+			// ---------------------------------------------------------------------
+			/*
+			 * XXX multiplying the vector by dt and acceleration x_ij in Distance
+			 * would save 6 flops
+			 */
 			/* update velocities */
 			v_i[0] += acceleration * x_ij[0] * dt;
 			v_i[1] += acceleration * x_ij[1] * dt;
@@ -114,6 +119,7 @@ void leapfrogVerlet ( T *x, T *v ) {
 			v_j[0] -= acceleration * x_ij[0] * dt;
 			v_j[1] -= acceleration * x_ij[1] * dt;
 			v_j[2] -= acceleration * x_ij[2] * dt;
+			// ---------------------------------------------------------------------
 			
 
 			/* go to next D-tuple of coordinates */
