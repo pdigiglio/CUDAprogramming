@@ -66,7 +66,8 @@ main () {
     // variables to control block and grid dimension
     dim3  dimBlock( BLOCK_SIZE, BLOCK_SIZE );
     dim3   dimGrid( GRID_SIZE,  GRID_SIZE );
-	trial <<< dimGrid, dimBlock >>> ();
+//	trial <<< dimGrid, dimBlock >>> ();
+    cudaLeapFrogVerlet<1,1,float> <<< dimGrid, dimBlock >>> ( NULL, NULL );
 	errorCode = cudaGetLastError();
 	if( errorCode != cudaSuccess ) {
 		fprintf( stderr, "%s\n", cudaGetErrorString( errorCode ) );
