@@ -24,9 +24,7 @@ extern const float evolutionCoeff[4];
  * type is `float` then \f$ 1/(\epsilon^2)^3\f$ _must_ be smaller than the maximum value
  * a `float` variable can hold.
  */
-#define EPS2 .001
-//__device__ __host__
-void rungeKutta ( float *x, float *v, size_t N );
+#define EPS2 .002
 
 /**
  * @brief Force.
@@ -75,16 +73,26 @@ void leapfrogVerlet ( T *x, T *v ) {
 	// ---------------------------------------------------------------------------------
 	/* XXX if N % 4 == 0 then thi loop can be unrolled by 4x */
 	/* evolve particles' position */
-	for ( size_t i = 0; i < N * D; ++ i ) {
-		x[i] += v[i] * dt;
+	T *x_i = x;
+	T *v_i = v;
+	for ( size_t i = 0; i < N; ++ i ) {
+		x_i[0] += v_i[0] * dt;
+		x_i[1] += v_i[1] * dt;
+		x_i[2] += v_i[2] * dt;
+
+		x_i += D;
+		v_i += D + 1;
 	}
 	// ---------------------------------------------------------------------------------
 
 	/* auxiliary variable to hold distance among particles */
 	T x_ij[D];
 	/* auxiliary variables for the inner/outer-loop particle */
-	T *x_j = NULL, *x_i = x;
-	T *v_j = NULL, *v_i = v;
+	T *x_j = NULL;
+	T *v_j = NULL;
+
+	x_i = x;
+	v_i = v;
 	for ( size_t i = 0; i < N; ++ i ) {
 		/* (re-)initialize x_j */
 		x_j = x;
@@ -94,7 +102,10 @@ void leapfrogVerlet ( T *x, T *v ) {
 
 			/* assign the distance among particles */
 			distance< D >( x_i, x_j, x_ij );
-			T acceleration = F< D >( x_ij );
+			T acceleration_i = F< D >( x_ij );
+
+			T acceleration_j = v_i[3] * acceleration_i;
+			acceleration_i *= v_j[3];
 
 //			/* 
 //			 * replace this loop with the following to (hopefully) achieve a better
@@ -111,25 +122,25 @@ void leapfrogVerlet ( T *x, T *v ) {
 			 * would save 6 flops
 			 */
 			/* update velocities */
-			v_i[0] += acceleration * x_ij[0] * dt;
-			v_i[1] += acceleration * x_ij[1] * dt;
-			v_i[2] += acceleration * x_ij[2] * dt;
+			v_i[0] += acceleration_i * x_ij[0] * dt;
+			v_i[1] += acceleration_i * x_ij[1] * dt;
+			v_i[2] += acceleration_i * x_ij[2] * dt;
 			
 
-			v_j[0] -= acceleration * x_ij[0] * dt;
-			v_j[1] -= acceleration * x_ij[1] * dt;
-			v_j[2] -= acceleration * x_ij[2] * dt;
+			v_j[0] -= acceleration_j * x_ij[0] * dt;
+			v_j[1] -= acceleration_j * x_ij[1] * dt;
+			v_j[2] -= acceleration_j * x_ij[2] * dt;
 			// ---------------------------------------------------------------------
 			
 
 			/* go to next D-tuple of coordinates */
 			x_j += D;
-			v_j += D;
+			v_j += D + 1;
 		}
 
 		/* go to next D-tuple of coordinates */
 		x_i += D;
-		v_i += D;
+		v_i += D + 1;
 	}
 };
 
@@ -190,6 +201,8 @@ void leapfrogVerletBlock ( T *x, T *v ) {
 		v_i += D;
 	}
 };
+//__device__ __host__
+void rungeKutta ( float *x, float *v, size_t N );
 
 /**
  * @brief Auxiliaty function for Runge-Kutta method.
