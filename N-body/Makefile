@@ -2,7 +2,7 @@ CPPFLAGS= -Wall
 
 .PHONY: clean distclean doc docshow
 
-main: $(patsubst %.c,%.o,$(wildcard *.c)) $(patsubst %.cc,%.o,$(wildcard *.cc))
+main: %: $(patsubst %.c,%.o,%.c) $(patsubst %.cc,%.o,$(wildcard *.cc))
 	g++ $(CPPFLAGS) $+ -o $@
 
 # want to build again modules even if (only) header is changed
