@@ -22,18 +22,61 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+
 #include <string.h>
+#include <ctype.h>
 #include <errno.h>
+
+unsigned long int
+detectPartcleNumber( FILE *input ) {
+	unsigned long int wordCount = 0;
+	/* load first line of file in memory */
+	char tmp = fgetc( input );
+	while ( tmp != '\n' ){
+
+
+//		putchar( tmp );
+		/* skip all spaces at the beginning */
+		while( isspace(tmp) && tmp != '\n' )
+			tmp = fgetc( input );
+
+		/* takes into account trailing spaces at the end of the line */
+		if( tmp == '\n' )
+			break;
+
+		/* update word counter */
+		wordCount ++;
+
+		/* a word has been found so I run through it */
+		while( !(  isspace( tmp ) ) ) {
+			tmp = fgetc( input );
+//			putchar( tmp );
+		}
+
+//		if( tmp == '\n' )
+//			break;
+	}
+
+	/* first column is time */
+	return ( wordCount - 1 ) / 3;
+
+}
 
 int main ( int argc, char *argv[] ) {
 
+
 	char inputFileName[] = "grav.txt";                  /* input-file name    */
-	FILE *input          = fopen( inputFileName, "r" );	/* input-file pointer */
-	if ( input == NULL ) {
+	FILE *input= fopen( inputFileName, "r" );
+
+	if ( ! input ) {
 		fprintf ( stderr, "couldn't open file '%s'; %s\n",
 				inputFileName, strerror(errno) );
 		exit (EXIT_FAILURE);
 	}
+
+	const unsigned long int numOfParticles = detectPartcleNumber( input );
+//	fprintf( stderr, "par: %lu\n", numOfParticles );
+//	return 0;
 
 	const char *rootFileName = "grav";
 	char	outputFileName[100] = ""; /* output-file name    */
@@ -44,6 +87,7 @@ int main ( int argc, char *argv[] ) {
 	long double centerOfMassPosition[3] = { 0, 0, 0 };
 	long double dataInput[3];
 
+	/* loop over lines in the input file */
 	while ( !feof( input )  ) {
 		sprintf( outputFileName, "%s.%06d.csv", rootFileName, n );
 		output = fopen( outputFileName, "w" );
@@ -60,14 +104,16 @@ int main ( int argc, char *argv[] ) {
 		for ( unsigned int d = 0; d < 3; ++ d ) 
 			centerOfMassPosition[d] = 0.;
 
-		for( unsigned int j = 0; j < 4; ++ j ) {
+		/* loop over particles */
+		fprintf( output, "x,y,z\n" );
+		for( unsigned int j = 0; j < numOfParticles; ++ j ) {
 
 			for ( unsigned int d = 0; d < 3; ++ d ) {
 				fscanf( input, "%Lf\t", & dataInput[d] );
 				centerOfMassPosition[d] += dataInput[d];
 			}
 
-			fprintf( output, "%.6Lg,%.6Lg,%.6Lg\n", dataInput[0], dataInput[1], dataInput[2] );
+			fprintf( output, "%.6Lg,%.6Lg,%.6Lg,\n", dataInput[0], dataInput[1], dataInput[2] );
 		}
 		fscanf( input, "\n" );
 
@@ -84,9 +130,7 @@ int main ( int argc, char *argv[] ) {
 		++ n;
 	}
 
-
-
-	if( fclose(input) == EOF ) {			/* close input file   */
+	if( fclose( input ) == EOF ) {			/* close input file   */
 		fprintf ( stderr, "couldn't close file '%s'; %s\n",
 				inputFileName, strerror(errno) );
 		exit (EXIT_FAILURE);
