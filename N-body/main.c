@@ -24,11 +24,8 @@ void cudaCheckError( cudaError_t errorCode ) {
 		exit( EXIT_FAILURE );
 	}
 }
-	int
-main () {
 
-//    printf("%s Starting...\n\n", argv[0]);
-
+void cudaPrintDeviceInfo() {
 	/* taken from 0_Simple/cudaOpenMp/cudaOpenMP.cu */
     /////////////////////////////////////////////////////////////////
     // determine the number of CUDA capable GPUs
@@ -38,7 +35,7 @@ main () {
 	cudaGetDeviceCount( &numGPUs );
     if ( numGPUs < 1 ) {
         fprintf( stderr, "no CUDA capable devices were detected\n");
-        return 1;
+        exit( EXIT_FAILURE );
     }
 
     /////////////////////////////////////////////////////////////////
@@ -54,6 +51,13 @@ main () {
     }
 
     printf("---------------------------\n");
+}
+	int
+main () {
+
+//    printf("%s Starting...\n\n", argv[0]);
+
+    cudaPrintDeviceInfo();
 
 
 //	float x[numOfParticles] = {};
