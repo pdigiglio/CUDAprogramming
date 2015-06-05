@@ -15,6 +15,15 @@
 // TODO consider accepting these parameters as cmd-line args
 const unsigned short int BLOCK_SIZE = 16;
 const unsigned short int  GRID_SIZE = 1;
+
+void cudaCheckError( cudaError_t errorCode ) {
+	errorCode = cudaGetLastError();
+
+	if( errorCode != cudaSuccess ) {
+		fprintf( stderr, "%s\n", cudaGetErrorString( errorCode ) );
+		exit( EXIT_FAILURE );
+	}
+}
 	int
 main () {
 
@@ -68,11 +77,12 @@ main () {
     dim3   dimGrid( GRID_SIZE,  GRID_SIZE );
 //	trial <<< dimGrid, dimBlock >>> ();
     cudaLeapFrogVerlet<1,1,float> <<< dimGrid, dimBlock >>> ( NULL, NULL );
-	errorCode = cudaGetLastError();
-	if( errorCode != cudaSuccess ) {
-		fprintf( stderr, "%s\n", cudaGetErrorString( errorCode ) );
-		exit( EXIT_FAILURE );
-	}
+    cudaCheckError( errorCode );
+//	errorCode = cudaGetLastError();
+//	if( errorCode != cudaSuccess ) {
+//		fprintf( stderr, "%s\n", cudaGetErrorString( errorCode ) );
+//		exit( EXIT_FAILURE );
+//	}
 
     /* record stop on the same stream as start */
     cudaEventRecord( stop, 0 );
