@@ -18,7 +18,14 @@ __global__
 void cudaLeapFrogVerlet( T* x, T* v ) {
     unsigned threadID = blockDim.x * blockIdx.x + threadIdx.x;
 
-    printf( "Args [%u]: x %p y %p N %zu D %zu\n", threadID, (void*) x, (void*) v, N , D );
+//    printf( "Args [%u]: x %p y %p N %zu D %zu\n", threadID, (void*) x, (void*) v, N , D );
+    // if you do like that then it may be that some other thread
+    // writes in-between
+//    printf( "block %u (of %u), %u\n", blockIdx.x, gridDim.x, threadIdx.x );
+//    printf( "block %u (of %u), %u\n", blockIdx.y, gridDim.y, threadIdx.y );
+//    printf( "block %u (of %u), %u\n", blockIdx.z, gridDim.z, threadIdx.z );
+
+    x[ threadID ] ++;
     
 };
 

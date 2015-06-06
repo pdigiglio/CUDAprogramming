@@ -17,7 +17,7 @@ const unsigned short int BLOCK_SIZE = 16;
 const unsigned short int  GRID_SIZE = 1;
 
 void cudaCheckError( cudaError_t errorCode ) {
-	errorCode = cudaGetLastError();
+//	errorCode = cudaGetLastError();
 
 	if( errorCode != cudaSuccess ) {
 		fprintf( stderr, "%s\n", cudaGetErrorString( errorCode ) );
@@ -56,12 +56,35 @@ void cudaPrintDeviceInfo() {
 main () {
 
 //    printf("%s Starting...\n\n", argv[0]);
-
     cudaPrintDeviceInfo();
 
 
-//	float x[numOfParticles] = {};
-//	float v[numOfParticles] = {};
+	const size_t xEntries    = BLOCK_SIZE;
+	const size_t xMemorySize = xEntries * sizeof( float );
+	float *x = (float *) calloc( xEntries, xMemorySize );
+
+	const size_t vEntries    = BLOCK_SIZE;
+	const size_t vMemorySize = vEntries * sizeof( float );
+	float *v = (float *) calloc( vEntries, vMemorySize );
+
+	/* variable to control errors in CUDA calls */
+	cudaError_t errorCode = cudaSuccess;
+
+    // allocate device memory
+    float  *device_x = NULL;
+    errorCode = cudaMalloc( &device_x, xMemorySize );
+    cudaCheckError( errorCode );
+
+    float  *device_v = NULL;
+    errorCode = cudaMalloc( &device_v, vMemorySize );
+    cudaCheckError( errorCode );
+
+    // copy meory from host to device
+    errorCode = cudaMemcpy( device_x, x, xMemorySize, cudaMemcpyHostToDevice );
+    cudaCheckError( errorCode );
+    errorCode = cudaMemcpy( device_v, v, vMemorySize, cudaMemcpyHostToDevice );
+    cudaCheckError( errorCode );
+
 
     /* event to get CUDA execution time */
     cudaEvent_t start, stop;
@@ -70,23 +93,38 @@ main () {
     cudaEventCreate( &stop );
     /* TODO checkError */
 
-	/* variable to control errors in CUDA calls */
-	cudaError_t errorCode = cudaSuccess;
-
     /* record start (0 = default stream) */
     cudaEventRecord( start, 0 );
 
     // variables to control block and grid dimension
-    dim3  dimBlock( BLOCK_SIZE, BLOCK_SIZE );
+    dim3  dimBlock( BLOCK_SIZE /*, BLOCK_SIZE */ );
     dim3   dimGrid( GRID_SIZE,  GRID_SIZE );
 //	trial <<< dimGrid, dimBlock >>> ();
-    cudaLeapFrogVerlet<1,1,float> <<< dimGrid, dimBlock >>> ( NULL, NULL );
+
+	for ( unsigned t = 0; t < 10; t += 10 ) {
+
+		for ( unsigned int j = 0; j < 1; ++ j ) {
+            cudaLeapFrogVerlet<1,1,float> <<< dimGrid, dimBlock >>> ( device_x, device_v );
+	//		leapfrogVerlet < numOfParticles, spaceDimension > ( x, v );
+	//		rungeKutta( x, v, numOfParticles );
+		}
+
+//		printf( "%u\t", t );
+//		for( unsigned int i = 0; i < numOfParticles * spaceDimension;  i += 6 ) {
+//			printf( "%.6g\t%.6g\t%.6g\t", x[i ], x[i+1], x[i+2] );
+//			printf( "%.6g\t%.6g\t%.6g\t"  , x[i+3], x[i+4], x[i+5] );
+//		}
+//		printf( "\n" );
+	}
+
+    errorCode = cudaGetLastError();
     cudaCheckError( errorCode );
-//	errorCode = cudaGetLastError();
-//	if( errorCode != cudaSuccess ) {
-//		fprintf( stderr, "%s\n", cudaGetErrorString( errorCode ) );
-//		exit( EXIT_FAILURE );
-//	}
+
+    // copy meory from host to device
+    errorCode = cudaMemcpy( x, device_x, xMemorySize, cudaMemcpyDeviceToHost );
+    cudaCheckError( errorCode );
+    errorCode = cudaMemcpy( v, device_v, vMemorySize, cudaMemcpyDeviceToHost );
+    cudaCheckError( errorCode );
 
     /* record stop on the same stream as start */
     cudaEventRecord( stop, 0 );
@@ -95,7 +133,6 @@ main () {
     float elapsedTime;
     cudaEventElapsedTime( &elapsedTime, start, stop );
 
-
     fprintf( stderr, "CUDA kernel execution time: %g ms\n", elapsedTime );
 
     cudaEventDestroy( start );
@@ -103,13 +140,20 @@ main () {
     cudaEventDestroy( stop );
     /* TODO checkError */
 
-//	for ( unsigned t = 0; t < 1000000; ++ t ) {
-//		leapfrogVerlet( x, v, numOfParticles );
-//		rungeKutta( x, v, numOfParticles );
-//		printf( "%u %.6g %.6g\n", t, x[0], v[0] );
-//	}
+    for( size_t i = 0; i < xEntries; ++ i ) {
+        printf( "x[ %zu ] = %g\n", i, x[i] );
+    }
 
 	cudaDeviceSynchronize();
+
+    errorCode = cudaFree( device_x );
+    cudaCheckError( errorCode );
+
+    errorCode = cudaFree( device_v );
+    cudaCheckError( errorCode );
+
+    free( x );
+    free( v );
 
 	/*
      * `cudaDeviceReset()` causes the driver to clean up all state. While
