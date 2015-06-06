@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <assert.h>
 
 #include <omp.h>
 
@@ -13,24 +14,41 @@
 //const unsigned int numOfParticles = 1;
 
 // TODO consider accepting these parameters as cmd-line args
-const unsigned short int BLOCK_SIZE = 16;
+const unsigned short int BLOCK_SIZE = 32;
 const unsigned short int  GRID_SIZE = 1;
 
-void cudaCheckError( cudaError_t errorCode ) {
+/**
+ * @brief Checks if there were errors in calling a CUDA function
+ * 
+ * To actually "enable" this function the program must be compiled with either
+ * `-DDEBUG` or `-D_DEBUG` flags.
+ *
+ * @return the error code passed as argument
+ */
+    inline cudaError_t
+cudaCheckError( cudaError_t errorCode ) {
 //	errorCode = cudaGetLastError();
 
+    // compile with -DDEBUG or -D_DEBUG option to enable this check
+#if defined(DEBUG) || defined(_DEBUG) 
 	if( errorCode != cudaSuccess ) {
 		fprintf( stderr, "%s\n", cudaGetErrorString( errorCode ) );
-		exit( EXIT_FAILURE );
+//		exit( EXIT_FAILURE );
+        assert( errorCode == cudaSuccess );
 	}
+#endif
+
+    return errorCode;
 }
 
-void cudaPrintDeviceInfo() {
-	/* taken from 0_Simple/cudaOpenMp/cudaOpenMP.cu */
-    /////////////////////////////////////////////////////////////////
+/**
+ * @brief Print GPU info and number of CPU cores
+ *
+ * The function has been taken from `0_Simple/cudaOpenMp/cudaOpenMP.cu`.
+ */
+    void
+cudaPrintDeviceInfo() {
     // determine the number of CUDA capable GPUs
-    //
-	
 	int numGPUs = 0;
 	cudaGetDeviceCount( &numGPUs );
     if ( numGPUs < 1 ) {
@@ -38,9 +56,7 @@ void cudaPrintDeviceInfo() {
         exit( EXIT_FAILURE );
     }
 
-    /////////////////////////////////////////////////////////////////
     // display CPU and GPU configuration
-    //
     printf("number of host CPUs:\t%d\n", omp_get_num_procs());
     printf("number of CUDA devices:\t%d\n", numGPUs);
 
@@ -88,10 +104,8 @@ main () {
 
     /* event to get CUDA execution time */
     cudaEvent_t start, stop;
-    cudaEventCreate( &start );
-    /* TODO checkError */
-    cudaEventCreate( &stop );
-    /* TODO checkError */
+    cudaCheckError( cudaEventCreate( &start ) );
+    cudaCheckError( cudaEventCreate( &stop ) );
 
     /* record start (0 = default stream) */
     cudaEventRecord( start, 0 );
