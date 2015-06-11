@@ -1,6 +1,7 @@
 CPPFLAGS   = -Wall -Wextra -m64 -march=native -mtune=native -O2
 
-CPP        = gcc -std=c99
+# g++ is needed if you want to use templates
+CPP        = g++ #gcc -std=c99
 MAKEDEPEND = $(CPP) -M
 
 .PHONY: clean distclean doc docshow
@@ -8,8 +9,7 @@ MAKEDEPEND = $(CPP) -M
 main: %: $(patsubst %.c,%.o,%.c) $(patsubst %.cc,%.o,$(wildcard *.cc))
 	$(CPP) $(CPPFLAGS) $+ -o $@
 
-# want to build again modules even if (only) header is changed
-%.o: %.cc %.h Makefile
+%.o: %.cc Makefile
 	$(CPP) $(CPPFLAGS) -MD -c $< -o $@
 
 %.o: %.c Makefile
@@ -18,7 +18,7 @@ main: %: $(patsubst %.c,%.o,%.c) $(patsubst %.cc,%.o,$(wildcard *.cc))
 createTimeEvolution: %: %.o
 	$(CPP) $(CPPFLAGS) -MD $+ -o $@
 
--include main.d
+-include $($(wildcard *.c):.c=.d) $($(wildcard *.cc):.cc=.d)
 
 # generate documentation with doxygen
 doc:
