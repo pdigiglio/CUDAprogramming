@@ -6,6 +6,8 @@ MAKEDEPEND = $(CPP) -M
 
 .PHONY: clean distclean doc docshow
 
+include main.d #$($(wildcard *.c):.c=.d) # $($(wildcard *.cc):.cc=.d)
+
 main: %: $(patsubst %.c,%.o,%.c) $(patsubst %.cc,%.o,$(wildcard *.cc))
 	$(CPP) $(CPPFLAGS) $+ -o $@
 
@@ -15,10 +17,11 @@ main: %: $(patsubst %.c,%.o,%.c) $(patsubst %.cc,%.o,$(wildcard *.cc))
 %.o: %.c Makefile
 	$(CPP) $(CPPFLAGS) -MD -c $< -o $@
 
+%.d:%.c
+	$(MAKEDEPEND) $< -o $@
+
 createTimeEvolution: %: %.o
 	$(CPP) $(CPPFLAGS) -MD $+ -o $@
-
--include $($(wildcard *.c):.c=.d) $($(wildcard *.cc):.cc=.d)
 
 # generate documentation with doxygen
 doc:
