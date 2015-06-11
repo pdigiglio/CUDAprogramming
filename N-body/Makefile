@@ -1,19 +1,22 @@
-CPPFLAGS= -Wall -m64 -march=native -mtune=native -O2
+CPPFLAGS   = -Wall -Wextra -m64 -march=native -mtune=native -O2
+
+CPP        = gcc -std=c99
+MAKEDEPEND = 
 
 .PHONY: clean distclean doc docshow
 
 main: %: $(patsubst %.c,%.o,%.c) $(patsubst %.cc,%.o,$(wildcard *.cc))
-	g++ $(CPPFLAGS) $+ -o $@
+	$(CPP) $(CPPFLAGS) $+ -o $@
 
 # want to build again modules even if (only) header is changed
 %.o: %.cc %.h Makefile
-	g++ $(CPPFLAGS) -c $< -o $@
+	$(CPP) $(CPPFLAGS) -c $< -o $@
 
 %.o: %.c Makefile
-	g++ $(CPPFLAGS) -c $< -o $@
+	$(CPP) $(CPPFLAGS) -c $< -o $@
 
 createTimeEvolution: %: %.o
-	g++ $(CPPFLAGS) $+ -o $@
+	$(CPP) $(CPPFLAGS) $+ -o $@
 
 # generate documentation with doxygen
 doc:
