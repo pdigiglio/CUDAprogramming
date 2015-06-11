@@ -22,8 +22,10 @@ createTimeEvolution: %: %.o
 doc:
 	doxygen && make -C latex
 
+# generate documentation with doxygen
+# and call evince to display it in background
 docshow: doc
-	evince latex/refman.pdf
+	evince latex/refman.pdf &
 
 clean:
 	rm --recursive --verbose --force *.o
