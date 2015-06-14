@@ -27,8 +27,7 @@
 #include <ctype.h>
 #include <errno.h>
 
-unsigned long int
-detectPartcleNumber( FILE *input ) {
+unsigned long int detectPartcleNumber( FILE *input, bool print = false ) {
 	unsigned long int wordCount = 0;
 	/* load first line of file in memory */
 	char tmp = fgetc( input );
@@ -57,6 +56,11 @@ detectPartcleNumber( FILE *input ) {
 //			break;
 	}
 
+	if ( print ) {
+		printf( "%lu particle detected\n", ( wordCount - 1 ) / 3 );
+		exit(1);
+	}
+
 	/* first column is time */
 	return ( wordCount - 1 ) / 3;
 
@@ -74,7 +78,7 @@ int main ( int argc, char *argv[] ) {
 		exit (EXIT_FAILURE);
 	}
 
-	const unsigned long int numOfParticles = detectPartcleNumber( input );
+	const unsigned long int numOfParticles = detectPartcleNumber( input /*, true */ );
 //	fprintf( stderr, "par: %lu\n", numOfParticles );
 //	return 0;
 
