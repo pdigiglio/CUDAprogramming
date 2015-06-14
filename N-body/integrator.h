@@ -66,6 +66,30 @@ void distance( const T *x, const T *y, T *x_ij ) {
 	x_ij[2] = x[2] - y[2];
 };
 
+/**
+ * @brief Scales second vector by \f$c\f$ and adds it up into the first
+ */
+template <size_t N, unsigned short D, typename T>
+void incrementFirstVecBySecond( T *a, const T *b, T c ) {
+	/* XXX loop unrolled */
+	for( size_t i = 0; i < N * D; i += 2 ) {
+		a[i  ]  += c * b[i  ];
+		a[i+1]  += c * b[i+1];
+	}
+}
+
+/**
+ * @brief Adds two vectors and stores result into the first
+ */
+template <size_t N, unsigned short D, typename T>
+void incrementFirstVecBySecond( T *a, const T *b ) {
+	/* XXX loop unrolled */
+	for( size_t i = 0; i < N * D; i += 2 ) {
+		a[i  ]  += b[i  ];
+		a[i+1]  += b[i+1];
+	}
+}
+
 //__device__ __host__
 template <size_t N, unsigned short D, typename T>
 void leapfrogVerlet ( T *x, T *v ) {
@@ -144,65 +168,245 @@ void leapfrogVerlet ( T *x, T *v ) {
 	}
 };
 
-/* TODO divide into blocks */
+/**
+ * @brief Helper function to evolve positions by one steps.
+ *
+ * Performs the operation \f$x_j(t) = x_j(t-1) + v_j( t - 1/2) \mathrm{d}t\f$
+ * for each component \f$j\f$ running from 0 to `D` (template parameter).
+ */
+template <unsigned short D, typename T>
+inline void leapFrogVerletUpdatePositions( T *x, const T *v ) {
+	x[0] += v[0] * dt;
+	x[1] += v[1] * dt;
+	x[2] += v[2] * dt;
+}
+
+/**
+ * @brief Helper function
+ *
+ * @param v velocity D-tuple to be updated
+ * @param x displacement D-tuple "to be used as direction for the force"
+ * @param scale is meant to be acceleration times time step, i.e. \f$a\,\mathrm{d}t\f$
+ */
+template <unsigned short D, typename T>
+inline void leapFrogVerletUpdateVelocities ( T *v, const T *x, T scale ) {
+	v[0] += scale * x[0];
+	v[1] += scale * x[1];
+	v[2] += scale * x[2];
+}
+
+/**
+ * @brief Blocked version of Leapfrog algorithm.
+ *
+ * Same as `leapfrogVerlet()` but work is split into blocks.
+ *
+ * @attention The size `N` of vectors _must_ be a multiple of `BLOCK_SIZE`.
+ */
 //__device__ __host__
 template <size_t N, size_t BLOCK_SIZE, unsigned short D, typename T>
 void leapfrogVerletBlock ( T *x, T *v ) {
 
+//	fprintf( stderr, "calling leapfrogVerletBlock() with BLOCK_SIZE = %zu\n", BLOCK_SIZE );
+
 	// ---------------------------------------------------------------------------------
 	/* XXX if N % 4 == 0 then thi loop can be unrolled by 4x */
 	/* evolve particles' position */
-	for ( size_t i = 0; i < N * D; ++ i ) {
-		x[i] += v[i] * dt;
+	T *x_i = x;
+	T *v_i = v;
+	for ( size_t i = 0; i < N; ++ i ) {
+
+		leapFrogVerletUpdatePositions<D>( x_i, v_i );
+
+		x_i += D;
+		v_i += D + 1;
 	}
 	// ---------------------------------------------------------------------------------
 
 	/* auxiliary variable to hold distance among particles */
 	T x_ij[D];
+
 	/* auxiliary variables for the inner/outer-loop particle */
-	T *x_j = NULL, *x_i = x;
-	T *v_j = NULL, *v_i = v;
+	T *x_j = NULL;
+	T *v_j = NULL;
 
-	for ( size_t i = 0; i < N; ++ i ) {
-		/* (re-)initialize x_j */
-		x_j = x;
-		v_j = v;
+	// >> N is integer multiple of BLOCK_SIZE !!
+	// >> N / BLOCK_SIZE will be evaluated @ compile-time
+	for ( size_t ib = 0; ib < N / BLOCK_SIZE; ++ ib ) {
 
-		for( size_t j = 0; j < N; ++ j ) {
+		for ( size_t jb = 0; jb < N / BLOCK_SIZE; ++ jb ) {
+			x_i = x + ib * D * BLOCK_SIZE;         // re-use previous variable
+			v_i = v + ib * ( D + 1 ) * BLOCK_SIZE; // re-use previous variable
 
-			/* assign the distance among particles */
-			distance< D >( x_i, x_j, x_ij );
-			T acceleration = F< D >( x_ij );
+			for ( size_t i = 0; i < BLOCK_SIZE; ++ i ) {
+				/* move pointers at the beginning of the block */
+				x_j = x + jb * D * BLOCK_SIZE;
+				// D +1 is for the mass
+				v_j = v + jb * ( D + 1 ) * BLOCK_SIZE;
 
-			// ---------------------------------------------------------------------
-			/*
-			 * XXX multiplying the vector by dt and acceleration x_ij in Distance
-			 * would save 6 flops
-			 */
-			/* update velocities */
-			v_i[0] += acceleration * x_ij[0] * dt;
-			v_i[1] += acceleration * x_ij[1] * dt;
-			v_i[2] += acceleration * x_ij[2] * dt;
-			
+				for( size_t j = 0; j < BLOCK_SIZE; ++ j ) {
 
-//			v_j[0] -= acceleration * x_ij[0] * dt;
-//			v_j[1] -= acceleration * x_ij[1] * dt;
-//			v_j[2] -= acceleration * x_ij[2] * dt;
-			// ---------------------------------------------------------------------
-			
+					fprintf( stdout, "%zu %zu %zu %zu\n", ib, jb, i, j );
+					/* assign the distance among particles */
+					distance< D >( x_i, x_j, x_ij );
 
-			/* go to next D-tuple of coordinates */
-			x_j += D;
-			v_j += D;
+					/**
+					 * Acceleration on \f$i\f$-th particle due to \f$j\f$-th is 
+					 * \f$m_j\vec{r}/r^3\f$.
+					 */
+					T acceleration = F< D >( x_ij ) * v_j[3];
+
+
+					/* update velocities */
+					leapFrogVerletUpdateVelocities<D>( v_j, x_ij, acceleration * dt );
+
+					// update coordinates till the end of the block is reached
+					x_j += D;
+					v_j += D + 1;
+				}
+
+				// go to next row
+				x_i += D;
+				v_i += D + 1;
+			}
 		}
-
-		/* go to next D-tuple of coordinates */
-		x_i += D;
-		v_i += D;
 	}
 };
-//__device__ __host__
-void rungeKutta ( float *x, float *v, size_t N );
+
+///*
+// * @brief Acceleration of the i-th particle
+// */
+//template <size_t N, unsigned int D, typename T>
+//T Accelearation ( const T *x, const T *v, size_t i ) {
+//
+//	T acc = (T) 0;
+//
+//	/* auxiliary variable to hold distance among particles */
+//	T x_ij[D];
+//	T *x_j = x, *x_i = x + i * D;
+//	for( size_t j = 0; j < N; ++ j ) {
+//		/* evaluate distance */
+//		distance <D> ( x_i, x_j, x_ij );	
+//		/* add force due to interaction among i-j */
+//		acc += v[ j * (D + 1) + 3 ] * F <D> ( x_ij );
+//
+//		/* update j-th particle */
+//		x_j += D;
+//	}
+//
+//	return acc;
+//
+//}
+//
+///*
+// * @brief Copy second vector into first.
+// */
+//
+//template <size_t N, unsigned short D, typename T>
+//void copySecondVecIntoFirst( T *a, const T *b ) {
+//	/* XXX loop unrolled */
+//	for( size_t i = 0; i < N * D; i += 2 ) {
+//		a[i  ]  = b[i  ];
+//		a[i+1]  = b[i+1];
+//	}
+//}
+//
+////
+//template <size_t N, unsigned short D, typename T>
+//
+//void newK ( const T *x, T *k ) {
+//	for ( size_t i = 0; i < N; ++ i ) {
+//		for ( size_t i = 0; i < N; ++ i ) {
+//			/* evaluate force */
+//		}
+//	}
+//}
+//
+//template <size_t N, unsigned short D, typename T>
+//void evaluateNewK( const T *x, T *k, T c ) {
+//	T tmp[N];
+//	copySecondVecIntoFirst( tmp, x );
+//	incrementFirstVecBySecond( tmp, k, c );
+//
+//	newK( tmp, k );
+//}
+//
+//extern float functionCoeff[4];
+//extern float evolutionCoeff[4]*;
+//
+////__device__ __host__
+//template <size_t N, unsigned short D, typename T>
+//void rungeKutta ( T *x, T *v) {
+//
+//	/* temporary vector to hold \f$k_j\f$ values */
+//	T k[N];
+//
+//	/* increment for position */
+//	T positionIncrement[N];
+//	setVectorToZero( positionIncrement );
+//	
+//	// TODO evaluate k1 and store it into k
+//	
+//	incrementFirstVecBySecond( positionIncrement, k, (T) dt / 6. );
+//
+//	// TODO evaluate k2 and store it into k
+//
+//	incrementFirstVecBySecond( positionIncrement, k, (T) dt / 3. );
+//
+//	// TODO evaluate k3 and store it into k
+//
+//	incrementFirstVecBySecond( positionIncrement, k, (T) dt / 3. );
+//
+//	// TODO evaluate k4 and store it into k
+//
+//	incrementFirstVecBySecond( positionIncrement, k, (T) dt / 6. );
+//
+//	// now update position vector
+//	incrementFirstVecBySecond( x, positionIncrement );
+//
+////	/* temporary vector to hold values of position where to evaluate force */
+////	T tmpPosition[N]
+////	for ( unsigned short step; step < 4; ++ step ) {
+////		setVectorToZero( k );
+////
+////		for( size_t i = 0; i < N; ++ i ) {
+////			for( size_t j = 0; j < i; ++ j ) {
+////
+////			}
+////		}
+////	}
+//
+////	/* auxiliary tmp variables */
+////	T tmpX = (T) 0., incrementX = (T) 0.;
+////	T tmpV = (T) 0., incrementV = (T) 0.;
+////
+////	for ( size_t i = 0; i < N; ++ i ) {
+////	
+////		// reset temporary variables 
+////		incrementX = (T) 0.;
+////		incrementV = (T) 0.;
+////		
+////		tmpX = (T) 0.;
+////		tmpV = (T) 0.;
+////
+////		// TODO: consider loop unrolling
+////		//
+////		// This can't be vectorized but branching can be
+////		// reduced
+////
+////		// evaluate next value
+////		for ( short j = 0; j < 4; ++ j ) {
+////			tmpX = auxiliaryF( v[i] + functionCoeff[j] * tmpV );
+////			tmpV =          F( x[i] + functionCoeff[j] * tmpX );
+////
+////			// save increment
+////			incrementX += evolutionCoeff[j] * tmpX;
+////			incrementV += evolutionCoeff[j] * tmpV;
+////		}
+////
+////		x[i] += incrementX;
+////		v[i] += incrementV;
+////	}
+//};
 
 /**
  * @brief Auxiliaty function for Runge-Kutta method.

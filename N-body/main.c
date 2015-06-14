@@ -10,7 +10,7 @@
 #include <math.h>
 
 const unsigned int spaceDimension = 3;
-const unsigned int numOfParticles = 4; /* XXX this must be even! */
+const unsigned int numOfParticles = 2; /* XXX this must be even! */
 
 	int
 main ( int argc, char *argv[] ) {
@@ -49,19 +49,19 @@ main ( int argc, char *argv[] ) {
 
 	const size_t xEntries    = spaceDimension * numOfParticles;
 	double x[ spaceDimension * numOfParticles ] = {
-		1., 1., 0.,
-		-1., 1., 0.,
-		1., -1., 0.,
-		-1., -1., 0.,
+		1., 0., 0.,
+		-1., 0., 0.,
+//		1., -1., 0.,
+//		-1., -1., 0.,
 	};
 
 	/* tip: make sure the center of mass is at rest! ;) */
 	const size_t vEntries    = ( spaceDimension + 1 ) * numOfParticles;
 	double v[ vEntries ] = {
-		-1., -1., 0., 1.,
-		0., 0., 0., 1.,
-		1., 1., 0., 1.,
-		0., 0., 0., 1.,
+		0., -1., 0., 1.,
+		0., 1., 0., 1.,
+//		1., 1., 0., 1.,
+//		0., 0., 0., 1.,
 	};
 
 //	const size_t xEntries    = spaceDimension * numOfParticles;
@@ -71,7 +71,7 @@ main ( int argc, char *argv[] ) {
 //		fprintf( stderr, " > x allocation failed\n" );
 //		return 1;
 //	}
-
+//
 //	/**
 //	 * Initialize particles in a symmetric configuration, such that
 //	 * center of mass position is af \f$(0,0,0)\f$. 
@@ -112,20 +112,20 @@ main ( int argc, char *argv[] ) {
 //		v[j+6] = - v[j+2];
 //		v[j+7] = (double) 1; // mass
 //	}
-//
+
 	for ( unsigned t = 0; t < 100000; t += 10 ) {
 
 		fprintf( stderr, " > step %u of %u\n", t , 100000 );
 
-		printf( "%u\t", t );
-		for( unsigned int i = 0; i < numOfParticles * spaceDimension;  i += 6 ) {
-			printf( "%.6g\t%.6g\t%.6g\t", x[i ], x[i+1], x[i+2] );
-			printf( "%.6g\t%.6g\t%.6g\t"  , x[i+3], x[i+4], x[i+5] );
-		}
-
-		printf( "\n" );
+//		printf( "%u\t", t );
+//		for( unsigned int i = 0; i < numOfParticles * spaceDimension;  i += 6 ) {
+//			printf( "%.6g\t%.6g\t%.6g\t", x[i ], x[i+1], x[i+2] );
+//			printf( "%.6g\t%.6g\t%.6g\t"  , x[i+3], x[i+4], x[i+5] );
+//		}
+//
+//		printf( "\n" );
 		for ( unsigned int j = 0; j < 10; ++ j ) {
-			leapfrogVerlet < numOfParticles, spaceDimension > ( x, v );
+			leapfrogVerletBlock < numOfParticles, 2, spaceDimension > ( x, v );
 	//		rungeKutta( x, v, numOfParticles );
 		}
 
