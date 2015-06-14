@@ -6,10 +6,11 @@ MAKEDEPEND = $(CPP) -M
 
 .PHONY: clean distclean doc docshow
 
-include main.d #$($(wildcard *.c):.c=.d) # $($(wildcard *.cc):.cc=.d)
 
 main: %: $(patsubst %.c,%.o,%.c) $(patsubst %.cc,%.o,$(wildcard *.cc))
 	$(CPP) $(CPPFLAGS) $+ -o $@
+
+include main.d #$($(wildcard *.c):.c=.d) # $($(wildcard *.cc):.cc=.d)
 
 %.o: %.cc Makefile
 	$(CPP) $(CPPFLAGS) -MD -c $< -o $@
