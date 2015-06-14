@@ -10,59 +10,43 @@
 #include <math.h>
 
 const unsigned int spaceDimension = 3;
-const unsigned int numOfParticles = 2; /* XXX this must be even! */
+const unsigned int numOfParticles = 4; /* XXX this must be even! */
 
 	int
 main ( int argc, char *argv[] ) {
 	
 	fprintf(stderr, "%s Starting...\n\n", argv[0]);
 
-	/* taken from 0_Simple/cudaOpenMp/cudaOpenMP.cu
-    /////////////////////////////////////////////////////////////////
-    // determine the number of CUDA capable GPUs
-    //
-	
-	cudaGetDeviceCount(&num_gpus);
-
-    if (num_gpus < 1)
-    {
-        printf("no CUDA capable devices were detected\n");
-        return 1;
-    }
-
-    /////////////////////////////////////////////////////////////////
-    // display CPU and GPU configuration
-    //
-    printf("number of host CPUs:\t%d\n", omp_get_num_procs());
-    printf("number of CUDA devices:\t%d\n", num_gpus);
-
-    for (int i = 0; i < num_gpus; i++)
-    {
-        cudaDeviceProp dprop;
-        cudaGetDeviceProperties(&dprop, i);
-        printf("   %d: %s\n", i, dprop.name);
-    }
-
-    printf("---------------------------\n");
-
-	*/
-
-	const size_t xEntries    = spaceDimension * numOfParticles;
-	double x[ spaceDimension * numOfParticles ] = {
+	/**
+	 * Define number of elements of position array.
+	 */
+	const size_t xEntries = spaceDimension * numOfParticles;
+	double x[ xEntries ] = {
 		1., 0., 0.,
 		-1., 0., 0.,
-//		1., -1., 0.,
-//		-1., -1., 0.,
+		0., -1., 0.,
+		0., 1., 0.,
 	};
 
-	/* tip: make sure the center of mass is at rest! ;) */
-	const size_t vEntries    = ( spaceDimension + 1 ) * numOfParticles;
+	/**
+	 * Define number of elements of velocity array.
+	 *
+	 * @attention If one wants to use a kind of 4-velocity with the
+	 * particle mass as 4-th component, then `vEntries` and `xEntries`
+	 * differ.
+	 */
+	const size_t vEntries    = xEntries;
 	double v[ vEntries ] = {
-		0., -1., 0., 1.,
-		0., 1., 0., 1.,
-//		1., 1., 0., 1.,
-//		0., 0., 0., 1.,
+		0., 0., 0.,
+		0., 0., 0.,
+		0., 0., 0.,
+		0., 0., 0.,
 	};
+	
+	/**
+	 * Define mass vector.
+	 */
+	double m[ numOfParticles ] = { 1., 1., 1., 1. };
 
 //	const size_t xEntries    = spaceDimension * numOfParticles;
 //	const size_t xMemorySize = xEntries * sizeof( double );
@@ -113,22 +97,27 @@ main ( int argc, char *argv[] ) {
 //		v[j+7] = (double) 1; // mass
 //	}
 
-	for ( unsigned t = 0; t < 100000; t += 10 ) {
+	const unsigned int MaxNumberOfTimeSteps = 10000;
+	const unsigned int TimeStepIncrement    = 10;
+	for ( unsigned int t = 0; t < MaxNumberOfTimeSteps; t += TimeStepIncrement ) {
 
-		fprintf( stderr, " > step %u of %u\n", t , 100000 );
+//		fprintf( stderr, " > step %u of %u\n", t , MaxNumberOfTimeSteps );
+//		printf( "%u ", t ); 
 
-//		printf( "%u\t", t );
-//		for( unsigned int i = 0; i < numOfParticles * spaceDimension;  i += 6 ) {
-//			printf( "%.6g\t%.6g\t%.6g\t", x[i ], x[i+1], x[i+2] );
-//			printf( "%.6g\t%.6g\t%.6g\t"  , x[i+3], x[i+4], x[i+5] );
-//		}
-//
-//		printf( "\n" );
-		for ( unsigned int j = 0; j < 10; ++ j ) {
-			leapfrogVerletBlock < numOfParticles, 2, spaceDimension > ( x, v );
+		printf( "%u\t", t );
+		for( unsigned int i = 0; i < numOfParticles * spaceDimension;  i += 6 ) {
+			printf( "%.6g\t%.6g\t%.6g\t", x[i ], x[i+1], x[i+2] );
+			printf( "%.6g\t%.6g\t%.6g\t", x[i+3], x[i+4], x[i+5] );
+		}
+
+		printf( "\n" );
+
+		for ( unsigned int j = 0; j < TimeStepIncrement; ++ j ) {
+			leapfrogVerletBlock < numOfParticles, 2, spaceDimension > ( x, v, m );
 	//		rungeKutta( x, v, numOfParticles );
 		}
 
+//		fprintf( stderr, " again > step %u of %u\n", t , MaxNumberOfTimeSteps );
 	}
 
 	/*

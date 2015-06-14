@@ -92,7 +92,7 @@ void incrementFirstVecBySecond( T *a, const T *b ) {
 
 //__device__ __host__
 template <size_t N, unsigned short D, typename T>
-void leapfrogVerlet ( T *x, T *v ) {
+void leapfrogVerlet ( T *x, T *v, const T *m ) {
 
 	// ---------------------------------------------------------------------------------
 	/* XXX if N % 4 == 0 then thi loop can be unrolled by 4x */
@@ -171,7 +171,7 @@ void leapfrogVerlet ( T *x, T *v ) {
 /**
  * @brief Helper function to evolve positions by one steps.
  *
- * Performs the operation \f$x_j(t) = x_j(t-1) + v_j( t - 1/2) \mathrm{d}t\f$
+ * Performs the operation \f$x_j(t) = x_j(t-h) + v_j( t - h/2) \mathrm{d}t\f$
  * for each component \f$j\f$ running from 0 to `D` (template parameter).
  */
 template <unsigned short D, typename T>
@@ -201,10 +201,14 @@ inline void leapFrogVerletUpdateVelocities ( T *v, const T *x, T scale ) {
  * Same as `leapfrogVerlet()` but work is split into blocks.
  *
  * @attention The size `N` of vectors _must_ be a multiple of `BLOCK_SIZE`.
+ * 
+ * @param x position vector
+ * @param v velocity vector
+ * @param m mass vector
  */
 //__device__ __host__
 template <size_t N, size_t BLOCK_SIZE, unsigned short D, typename T>
-void leapfrogVerletBlock ( T *x, T *v ) {
+void leapfrogVerletBlock ( T *x, T *v, const T *m ) {
 
 //	fprintf( stderr, "calling leapfrogVerletBlock() with BLOCK_SIZE = %zu\n", BLOCK_SIZE );
 
@@ -218,7 +222,7 @@ void leapfrogVerletBlock ( T *x, T *v ) {
 		leapFrogVerletUpdatePositions<D>( x_i, v_i );
 
 		x_i += D;
-		v_i += D + 1;
+		v_i += D;
 	}
 	// ---------------------------------------------------------------------------------
 
@@ -234,18 +238,17 @@ void leapfrogVerletBlock ( T *x, T *v ) {
 	for ( size_t ib = 0; ib < N / BLOCK_SIZE; ++ ib ) {
 
 		for ( size_t jb = 0; jb < N / BLOCK_SIZE; ++ jb ) {
-			x_i = x + ib * D * BLOCK_SIZE;         // re-use previous variable
-			v_i = v + ib * ( D + 1 ) * BLOCK_SIZE; // re-use previous variable
+			x_i = x + D * (ib * BLOCK_SIZE); // re-use previous variable
+			v_i = v + D * (ib * BLOCK_SIZE); // re-use previous variable
 
 			for ( size_t i = 0; i < BLOCK_SIZE; ++ i ) {
 				/* move pointers at the beginning of the block */
-				x_j = x + jb * D * BLOCK_SIZE;
-				// D +1 is for the mass
-				v_j = v + jb * ( D + 1 ) * BLOCK_SIZE;
+				x_j = x + D * (jb * BLOCK_SIZE);
+				v_j = v + D * (jb * BLOCK_SIZE);
 
 				for( size_t j = 0; j < BLOCK_SIZE; ++ j ) {
 
-					fprintf( stdout, "%zu %zu %zu %zu\n", ib, jb, i, j );
+//					fprintf( stdout, "%zu %zu %zu %zu\n", ib, jb, i, j );
 					/* assign the distance among particles */
 					distance< D >( x_i, x_j, x_ij );
 
@@ -253,21 +256,22 @@ void leapfrogVerletBlock ( T *x, T *v ) {
 					 * Acceleration on \f$i\f$-th particle due to \f$j\f$-th is 
 					 * \f$m_j\vec{r}/r^3\f$.
 					 */
-					T acceleration = F< D >( x_ij ) * v_j[3];
+					T acceleration = F< D >( x_ij ) * m[ jb * BLOCK_SIZE + j ];
 
 
 					/* update velocities */
-					leapFrogVerletUpdateVelocities<D>( v_j, x_ij, acceleration * dt );
+					leapFrogVerletUpdateVelocities<D>( v_j, x_ij, - acceleration * dt );
 
 					// update coordinates till the end of the block is reached
 					x_j += D;
-					v_j += D + 1;
+					v_j += D;
 				}
 
 				// go to next row
 				x_i += D;
-				v_i += D + 1;
+				v_i += D;
 			}
+//			fprintf( stdout, "\n" );
 		}
 	}
 };
