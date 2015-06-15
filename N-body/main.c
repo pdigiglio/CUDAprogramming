@@ -12,42 +12,133 @@
 const unsigned int spaceDimension = 3;
 const unsigned int numOfParticles = 4; /* XXX this must be even! */
 
+/**
+ * @brief Helper function to allocate memory for single pointer.
+ *
+ * @param x reference to a pointer, otherwise copy by value prevents pointer itself to be changed
+ */
+template <typename T>
+void allocatePointer( T* &x, size_t xEntries, char name[] = "pointer" ) {
+	x = (T *) malloc( xEntries * sizeof( T ) );
+	if ( ! x ) {
+		fprintf( stderr, "%s allocation failed\n", name );
+		exit( EXIT_FAILURE );
+	}
+//	else {
+//		fprintf( stderr, "%s [%p] properly allocated!", name, (void *) x );
+//	}
+}
+
+/**
+ * @brief Initializes vectors.
+ * 
+ * It takes two contiguous particles and initializes randomly the first one with each
+ * component taking values in the interval \f$[-a,+a)\f$ (being \f$a>0\f$).
+ * The second one is initialized int such a way that \f$m_1x_1 + m_2 x_2 = 0\f$.
+ * This is simply achieved by choosing \f$x_2 = -x_1m_1/m_2\f$ and, since the number of
+ * particles is even, this ensures that
+ *  * center of mass is at rest;
+ *  * center of mass frame is such that its origin is \f$(0,0,0)\f$.
+ *
+ * @param x vector to initialize
+ * @param m mass(es) corresponding to the two particles
+ * @param scale the value of \f$a\f$
+ */
+template <typename T, short int D>
+void initialize( T *x, const T *m, T scale = 1. ) {
+	// random for first entry
+	x[0] = (T) ( scale * ( rand() / RAND_MAX - .5 ) );
+	x[1] = (T) ( scale * ( rand() / RAND_MAX - .5 ) );
+	x[2] = (T) ( scale * ( rand() / RAND_MAX - .5 ) );
+
+	// not random for the second entry
+	x[3] = - ( m[0] / m[1] ) * x[0];
+	x[4] = - ( m[0] / m[1] ) * x[1];
+	x[5] = - ( m[0] / m[1] ) * x[2];
+}
+
+/**
+ * @brief Helper function to initialize positions, velocities and masses.
+ */
+template <typename T, unsigned short D, size_t numOfParticles>
+void initializeSystem ( T* &x, T* &v, T* &m ) {
+	/**
+	 * Allocate memory via `allocatePointer()`.
+	 */
+	fprintf( stderr, "Initializing system with %zu particles... ", numOfParticles );
+	allocatePointer<T>( x, D * numOfParticles, "x" );
+	allocatePointer<T>( v, D * numOfParticles, "v" );
+	allocatePointer<T>( m, numOfParticles, "m" );
+
+	/**
+	 * Initialize the system such that the center of mass is at \f$(0,0,0)\f$ and it's
+	 * at rest.
+	 *
+	 * @attention `numOfParticles` has to be _even!_
+	 */
+	for( size_t i = 0; i < numOfParticles; ++ i ) {
+//		printf( "%zu %p\n", i, (void *) m );
+		m[i] = (T) rand() / RAND_MAX;
+	}
+
+//	fprintf( stderr, "mass initialized\n" );
+
+	/**
+	 * In this case `xEntries` and `vEntries` are equal so I can merge the loops in
+	 * one loop.
+	 */
+	for( size_t i = 0; i < numOfParticles; i += 2 ) {
+		initialize< T, D >( x + D * i, m + i );
+		initialize< T, D >( v + D * i, m + i );
+	}
+
+	fprintf( stderr, "done!\n" );
+}
+
 	int
 main ( int argc, char *argv[] ) {
 	
-	fprintf(stderr, "%s Starting...\n\n", argv[0]);
+	if ( argc > 1 )
+		fprintf( stderr, "Too many arguments: program doesn't accept any!\n" );
 
-	/**
-	 * Define number of elements of position array.
-	 */
-	const size_t xEntries = spaceDimension * numOfParticles;
-	double x[ xEntries ] = {
-		1., 0., 0.,
-		-1., 0., 0.,
-		0., -1., 0.,
-		0., 1., 0.,
-	};
+	fprintf(stderr, "%s Starting...\n\n", argv[0]);;
 
-	/**
-	 * Define number of elements of velocity array.
-	 *
-	 * @attention If one wants to use a kind of 4-velocity with the
-	 * particle mass as 4-th component, then `vEntries` and `xEntries`
-	 * differ.
-	 */
-	const size_t vEntries    = xEntries;
-	double v[ vEntries ] = {
-		0., 0., 0.,
-		0., 0., 0.,
-		0., 0., 0.,
-		0., 0., 0.,
-	};
-	
-	/**
-	 * Define mass vector.
-	 */
-	double m[ numOfParticles ] = { 1., 1., 1., 1. };
 
+	double *x = NULL, *v = NULL, *m = NULL;
+	initializeSystem < double, spaceDimension, numOfParticles > (x, v, m );
+	return 0;
+
+//	/**
+//	 * Define number of elements of position array.
+//	 */
+//	const size_t xEntries = spaceDimension * numOfParticles;
+//	double x[ xEntries ] = {
+//		1., 0., 0.,
+//		-1., 0., 0.,
+//		0., -1., 0.,
+//		0., 1., 0.,
+//	};
+//
+//	/**
+//	 * Define number of elements of velocity array.
+//	 *
+//	 * @attention If one wants to use a kind of 4-velocity with the
+//	 * particle mass as 4-th component, then `vEntries` and `xEntries`
+//	 * differ.
+//	 */
+//	const size_t vEntries    = xEntries;
+//	double v[ vEntries ] = {
+//		0., 0., 0.,
+//		0., 0., 0.,
+//		0., 0., 0.,
+//		0., 0., 0.,
+//	};
+//	
+//	/**
+//	 * Define mass vector.
+//	 */
+//	double m[ numOfParticles ] = { 1., 1., 1., 1. };
+//
 //	const size_t xEntries    = spaceDimension * numOfParticles;
 //	const size_t xMemorySize = xEntries * sizeof( double );
 //	double *x = (double *) malloc( xMemorySize );
