@@ -101,7 +101,7 @@ int main ( int argc, char *argv[] ) {
 			exit (EXIT_FAILURE);
 		}
 
-		fprintf( stderr, "opening %s\n", outputFileName );
+		fprintf( stderr, "[%lu] opening %s\n", numOfParticles, outputFileName );
 
 		fscanf( input, "%d\t", &dummy );
 
