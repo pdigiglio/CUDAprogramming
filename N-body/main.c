@@ -10,7 +10,7 @@
 #include <math.h>
 
 const unsigned int spaceDimension = 3;
-const unsigned int numOfParticles = 4; /* XXX this must be even! */
+const unsigned int numOfParticles = 64; /* XXX this must be even! */
 
 /**
  * @brief Helper function to allocate memory for single pointer.
@@ -18,7 +18,7 @@ const unsigned int numOfParticles = 4; /* XXX this must be even! */
  * @param x reference to a pointer, otherwise copy by value prevents pointer itself to be changed
  */
 template <typename T>
-void allocatePointer( T* &x, size_t xEntries, char name[] = "pointer" ) {
+void allocatePointer( T* &x, size_t xEntries, const char name[] = "pointer" ) {
 	x = (T *) malloc( xEntries * sizeof( T ) );
 	if ( ! x ) {
 		fprintf( stderr, "%s allocation failed\n", name );
@@ -47,9 +47,9 @@ void allocatePointer( T* &x, size_t xEntries, char name[] = "pointer" ) {
 template <typename T, short int D>
 void initialize( T *x, const T *m, T scale = 1. ) {
 	// random for first entry
-	x[0] = (T) ( scale * ( rand() / RAND_MAX - .5 ) );
-	x[1] = (T) ( scale * ( rand() / RAND_MAX - .5 ) );
-	x[2] = (T) ( scale * ( rand() / RAND_MAX - .5 ) );
+	x[0] = (T) ( scale * ( (T) rand() / RAND_MAX - .5 ) );
+	x[1] = (T) ( scale * ( (T) rand() / RAND_MAX - .5 ) );
+	x[2] = (T) ( scale * ( (T) rand() / RAND_MAX - .5 ) );
 
 	// not random for the second entry
 	x[3] = - ( m[0] / m[1] ) * x[0];
@@ -78,7 +78,7 @@ void initializeSystem ( T* &x, T* &v, T* &m ) {
 	 */
 	for( size_t i = 0; i < numOfParticles; ++ i ) {
 //		printf( "%zu %p\n", i, (void *) m );
-		m[i] = (T) rand() / RAND_MAX;
+		m[i] = ( (T) rand() ) / RAND_MAX;
 	}
 
 //	fprintf( stderr, "mass initialized\n" );
@@ -104,9 +104,9 @@ main ( int argc, char *argv[] ) {
 	fprintf(stderr, "%s Starting...\n\n", argv[0]);;
 
 
-	double *x = NULL, *v = NULL, *m = NULL;
-	initializeSystem < double, spaceDimension, numOfParticles > (x, v, m );
-	return 0;
+	long double *x = NULL, *v = NULL, *m = NULL;
+	initializeSystem < long double, spaceDimension, numOfParticles > (x, v, m );
+//	return 0;
 
 //	/**
 //	 * Define number of elements of position array.
@@ -188,28 +188,37 @@ main ( int argc, char *argv[] ) {
 //		v[j+7] = (double) 1; // mass
 //	}
 
-	const unsigned int MaxNumberOfTimeSteps = 10000;
+	const unsigned int MaxNumberOfTimeSteps = 100000;
 	const unsigned int TimeStepIncrement    = 10;
 	for ( unsigned int t = 0; t < MaxNumberOfTimeSteps; t += TimeStepIncrement ) {
 
-//		fprintf( stderr, " > step %u of %u\n", t , MaxNumberOfTimeSteps );
+		fprintf( stderr, "Evolving particles... [step %u of %u]\r", t , MaxNumberOfTimeSteps );
 //		printf( "%u ", t ); 
 
 		printf( "%u\t", t );
 		for( unsigned int i = 0; i < numOfParticles * spaceDimension;  i += 6 ) {
-			printf( "%.6g\t%.6g\t%.6g\t", x[i ], x[i+1], x[i+2] );
-			printf( "%.6g\t%.6g\t%.6g\t", x[i+3], x[i+4], x[i+5] );
+			printf( "%.6Lg\t%.6Lg\t%.6Lg\t", x[i ], x[i+1], x[i+2] );
+			printf( "%.6Lg\t%.6Lg\t%.6Lg\t", x[i+3], x[i+4], x[i+5] );
 		}
 
 		printf( "\n" );
 
 		for ( unsigned int j = 0; j < TimeStepIncrement; ++ j ) {
-			leapfrogVerletBlock < numOfParticles, 2, spaceDimension > ( x, v, m );
+			leapfrogVerletBlock < numOfParticles, 32, spaceDimension > ( x, v, m );
 	//		rungeKutta( x, v, numOfParticles );
 		}
 
 //		fprintf( stderr, " again > step %u of %u\n", t , MaxNumberOfTimeSteps );
 	}
+	fprintf( stderr, "Evolving particles... done!                                 \n" );
+
+	// free memory
+	fprintf( stderr, "Freeing memory... " );
+	free( x );
+	free( v );
+	free( m );
+
+	fprintf( stderr, "done!\n" );
 
 	/*
      * `cudaDeviceReset()` causes the driver to clean up all state. While
@@ -220,5 +229,6 @@ main ( int argc, char *argv[] ) {
 	 */
 //    cudaDeviceReset();
 
+	fprintf( stderr, "\nGoodbye!\n" );
 	return 0;
 }
