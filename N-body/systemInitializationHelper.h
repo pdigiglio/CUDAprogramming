@@ -26,7 +26,7 @@
  * @param x reference to a pointer, otherwise copy by value prevents pointer itself to be changed
  */
 template <typename T>
-void allocatePointer( T* &x, size_t xEntries, const char name[] = "pointer" ) {
+inline void allocatePointer( T* &x, size_t xEntries, const char name[] = "pointer" ) {
 	x = (T *) malloc( xEntries * sizeof( T ) );
 	if ( ! x ) {
 		fprintf( stderr, "%s allocation failed\n", name );
@@ -53,7 +53,7 @@ void allocatePointer( T* &x, size_t xEntries, const char name[] = "pointer" ) {
  * @param scale the value of \f$a\f$
  */
 template <typename T, short int D>
-void initialize( T *x, const T *m, T scale = 1. ) {
+inline void initialize( T *x, const T *m, T scale = 1. ) {
 	// random for first entry
 	x[0] = (T) ( scale * ( (T) rand() / RAND_MAX - .5 ) );
 	x[1] = (T) ( scale * ( (T) rand() / RAND_MAX - .5 ) );
