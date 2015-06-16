@@ -10,7 +10,22 @@
 #include <stdio.h>
 #include <math.h>
 
+/**
+ * @brief Number of space dimensions.
+ */
 const unsigned int spaceDimension = 3;
+
+/**
+ * @brief Size of the blocks
+ * @bug If it's greater than the number of particles, the evolution is wrong.
+ */
+const unsigned int blockSize      = 32;
+/**
+ * @brief Number of particles in the system.
+ *
+ * @attention This __must be a multiple of 4__ since in later functions a 4x manual loop 
+ * unrolling is performed.
+ */
 const unsigned int numOfParticles = 64; /* XXX this must be even! */
 
 
@@ -123,7 +138,7 @@ main ( int argc, char *argv[] ) {
 		printf( "\n" );
 
 		for ( unsigned int j = 0; j < TimeStepIncrement; ++ j ) {
-			leapfrogVerletBlock < numOfParticles, 32, spaceDimension > ( x, v, m );
+			leapfrogVerletBlock < numOfParticles, blockSize, spaceDimension > ( x, v, m );
 	//		rungeKutta( x, v, numOfParticles );
 		}
 
