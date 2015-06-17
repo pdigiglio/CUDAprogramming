@@ -53,16 +53,36 @@ inline void allocatePointer( T* &x, size_t xEntries, const char name[] = "pointe
  * @param scale the value of \f$a\f$
  */
 template <typename T, short int D>
-inline void initialize( T *x, const T *m, T scale = 1. ) {
+inline void initializeRandom( T *x, const T *m, T scale = 1. ) {
 	// random for first entry
-	x[0] = (T) ( scale * ( (T) rand() / RAND_MAX - .5 ) );
-	x[1] = (T) ( scale * ( (T) rand() / RAND_MAX - .5 ) );
-	x[2] = (T) ( scale * ( (T) rand() / RAND_MAX - .5 ) );
+	x[0] = (T) ( scale * 2 * ( (T) rand() / RAND_MAX - .5 ) );
+	x[1] = (T) ( scale * 2 * ( (T) rand() / RAND_MAX - .5 ) );
+	x[2] = (T) ( scale * 2 * ( (T) rand() / RAND_MAX - .5 ) );
 
 	// not random for the second entry
-	x[3] = - ( m[0] / m[1] ) * x[0];
-	x[4] = - ( m[0] / m[1] ) * x[1];
-	x[5] = - ( m[0] / m[1] ) * x[2];
+	// XXX masses are pair-wise equal
+	x[3] = - /* ( m[0] / m[1] ) * */ x[0];
+	x[4] = - /* ( m[0] / m[1] ) * */ x[1];
+	x[5] = - /* ( m[0] / m[1] ) * */ x[2];
+}
+
+/**
+ * @param phi angle in radiants
+ * @param radius
+ */
+template <typename T, short int D> //, long double tollerance, long double radius>
+inline void initializeRing ( T *x, const T *m, T phi, T tollerance = .2, T radius = 1. ) {
+	radius += tollerance * 2 * ( (T) rand() / RAND_MAX - .5 );
+
+	x[0] = radius * cos( phi );
+	x[1] = radius * sin( phi );
+	x[2] = (T) 0;
+
+
+	// masses are always pair-wise couppled
+	x[3] = - /* ( m[0] / m[1] ) * */ x[0];
+	x[4] = - /* ( m[0] / m[1] ) * */ x[1];
+	x[5] = (T) 0;
 }
 
 /**
@@ -84,9 +104,12 @@ void initializeSystem ( T* &x, T* &v, T* &m ) {
 	 *
 	 * @attention `numOfParticles` has to be _even!_
 	 */
-	for( size_t i = 0; i < numOfParticles; ++ i ) {
+	for( size_t i = 0; i < numOfParticles; i += 2 ) {
 //		printf( "%zu %p\n", i, (void *) m );
-		m[i] = ( (T) rand() ) / RAND_MAX;
+
+		// shift masses to prevent 0 value
+		m[i  ] = ( (T) rand() ) / RAND_MAX + .000001;
+		m[i+1] = m[i];
 	}
 
 //	fprintf( stderr, "mass initialized\n" );
@@ -95,9 +118,12 @@ void initializeSystem ( T* &x, T* &v, T* &m ) {
 	 * In this case `xEntries` and `vEntries` are equal so I can merge the loops in
 	 * one loop.
 	 */
+
+	// half of angle step since index is incremented by 2 every time
+	const T phiStep = (T) M_PI / numOfParticles;
 	for( size_t i = 0; i < numOfParticles; i += 2 ) {
-		initialize< T, D >( x + D * i, m + i );
-		initialize< T, D >( v + D * i, m + i );
+		initializeRing   < T, D > ( x + D * i, m + i, i * phiStep );
+		initializeRandom < T, D > ( v + D * i, m + i );
 	}
 
 	fprintf( stderr, "done!\n" );
