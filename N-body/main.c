@@ -17,6 +17,8 @@
 const unsigned short int BLOCK_SIZE = 32;
 const unsigned short int  GRID_SIZE = 1;
 
+const size_t numOfStreams = BLOCK_SIZE;
+
 /**
  * @brief Checks if there were errors in calling a CUDA function
  * 
@@ -114,13 +116,23 @@ main () {
     dim3  dimBlock( BLOCK_SIZE /*, BLOCK_SIZE */ );
     dim3   dimGrid( GRID_SIZE,  GRID_SIZE );
 //	trial <<< dimGrid, dimBlock >>> ();
+//
 
-	for ( unsigned t = 0; t < 10; t += 10 ) {
+	// --------------------------------------------------------------------------------------
+	// create streams
+	//
+	fprintf( stderr, "Creating %zu streams... ", numOfStreams );
+	cudaStream_t stream[ numOfStreams ];
+	for ( size_t s = 0; s < numOfStreams; ++ s ) 
+		cudaCheckError( cudaStreamCreate( &( stream[s] ) ) );
+	fprintf( stderr, "done!\n" );
+	// --------------------------------------------------------------------------------------
+
+	for ( unsigned t = 0; t < 1; t += 1 ) {
 
 		for ( unsigned int j = 0; j < 1; ++ j ) {
-            cudaLeapFrogVerlet<1,1,float> <<< dimGrid, dimBlock >>> ( device_x, device_v );
-	//		leapfrogVerlet < numOfParticles, spaceDimension > ( x, v );
-	//		rungeKutta( x, v, numOfParticles );
+			for( size_t s = 0; s < numOfStreams; ++ s )
+				cudaLeapFrogVerlet<1,1,float> <<< dimGrid, 1, 0, stream[s] >>> ( device_x + s, device_v + s );
 		}
 
 //		printf( "%u\t", t );
@@ -153,6 +165,16 @@ main () {
     /* TODO checkError */
     cudaEventDestroy( stop );
     /* TODO checkError */
+
+	// -------------------------------------------------------------------------
+	// destroy streams
+	//
+	fprintf( stderr, "Destroying the streams... " );
+	for( size_t s = 0; s < numOfStreams; ++ s ) {
+		cudaCheckError( cudaStreamDestroy( stream[s] ) );
+	}
+	fprintf( stderr, "done!\n" );
+	// -----------------------------------------------------------------------
 
     for( size_t i = 0; i < xEntries; ++ i ) {
         printf( "x[ %zu ] = %g\n", i, x[i] );
