@@ -34,42 +34,42 @@ const float evolutionCoeff[4] = {
 	2.f * dt / 6.f,
 	1.f * dt / 6.f
 };
-	void
-rungeKutta ( float *x, float *v, size_t N ) {
-
-	/*
-	float tmpX = 0.f, incrementX = 0.f;
-	float tmpV = 0.f, incrementV = 0.f;
-
-	for ( size_t i = 0; i < N; ++ i ) {
-	
-		// reset temporary variables 
-		incrementX = 0.f;
-		incrementV = 0.f;
-		
-		tmpX = 0.f;
-		tmpV = 0.f;
-
-		// TODO: consider loop unrolling
-		//
-		// This can't be vectorized but branching can be
-		// reduced
-
-		// evaluate next value
-		for ( short j = 0; j < 4; ++ j ) {
-			tmpX = auxiliaryF( v[i] + functionCoeff[j] * tmpV );
-			tmpV =          F( x[i] + functionCoeff[j] * tmpX );
-
-			// save increment
-			incrementX += evolutionCoeff[j] * tmpX;
-			incrementV += evolutionCoeff[j] * tmpV;
-		}
-
-		x[i] += incrementX;
-		v[i] += incrementV;
-	}
-	*/
-}
+//	void
+//rungeKutta ( float *x, float *v, size_t N ) {
+//
+//	/*
+//	float tmpX = 0.f, incrementX = 0.f;
+//	float tmpV = 0.f, incrementV = 0.f;
+//
+//	for ( size_t i = 0; i < N; ++ i ) {
+//	
+//		// reset temporary variables 
+//		incrementX = 0.f;
+//		incrementV = 0.f;
+//		
+//		tmpX = 0.f;
+//		tmpV = 0.f;
+//
+//		// TODO: consider loop unrolling
+//		//
+//		// This can't be vectorized but branching can be
+//		// reduced
+//
+//		// evaluate next value
+//		for ( short j = 0; j < 4; ++ j ) {
+//			tmpX = auxiliaryF( v[i] + functionCoeff[j] * tmpV );
+//			tmpV =          F( x[i] + functionCoeff[j] * tmpX );
+//
+//			// save increment
+//			incrementX += evolutionCoeff[j] * tmpX;
+//			incrementV += evolutionCoeff[j] * tmpV;
+//		}
+//
+//		x[i] += incrementX;
+//		v[i] += incrementV;
+//	}
+//	*/
+//}
 /*
 	template < size_t N, typename T>
 	inline T
@@ -87,7 +87,7 @@ F ( const float *x ) {
 }
 */
 
-	inline float
-auxiliaryF( float v, size_t N ) {
-	return v;
-}
+//	inline float
+//auxiliaryF( float v, size_t N ) {
+//	return v;
+//}

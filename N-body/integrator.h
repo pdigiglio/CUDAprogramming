@@ -56,7 +56,7 @@ inline T F ( const T *x_ij ) {
 	
 
 	/** @return \f$1/(\sqrt{r^2 + \epsilon^2})^3\f$. */
-	return - 1. / ( tmp * sqrtf( tmp ) );
+	return 1. / ( tmp * sqrtf( tmp ) );
 };
 
 template <unsigned short D, typename T>
@@ -260,7 +260,7 @@ void leapfrogVerletBlock ( T *x, T *v, const T *m ) {
 
 
 					/* update velocities */
-					leapFrogVerletUpdateVelocities<D>( v_j, x_ij, - acceleration * dt );
+					leapFrogVerletUpdateVelocities<D>( v_j, x_ij, acceleration * dt );
 
 					// update coordinates till the end of the block is reached
 					x_j += D;
@@ -420,6 +420,6 @@ void leapfrogVerletBlock ( T *x, T *v, const T *m ) {
  *
  * @param v Called `v` since velocity will be passed
  */
-inline float auxiliaryF ( float x, size_t N = 1 );
+//inline float auxiliaryF ( float x, size_t N = 1 );
 
 #endif /* INTEGRATOR_H_ */
