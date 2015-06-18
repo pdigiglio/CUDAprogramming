@@ -2,6 +2,7 @@
  *
  *
  *           @name  evolutionParameters.h
+ *          @brief  Parameters like time step and distance correction \f$\epsilon^2\f$.
  *
  *        @version  1.0
  *           @date  06/18/2015 (03:37:42 PM)
@@ -11,7 +12,6 @@
  *
  *         @author  P. Di Giglio (github.com/pdigiglio), <p.digiglio91@gmail.com>
  *        @company  
- *          @brief  
  *
  *          Example usage:
  *          @code
