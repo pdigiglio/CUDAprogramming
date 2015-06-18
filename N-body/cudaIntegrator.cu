@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#include "integrator.h"
+//#include "integrator.h"
 #include "cudaIntegrator.h"
 
 __global__ void trial () {
