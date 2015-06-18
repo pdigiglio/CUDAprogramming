@@ -2,6 +2,7 @@
 #define CUDAINTEGRATOR_H_
 
 #include <stdio.h>
+#include "cudaArrayOperationsHelper.h"
 
 __global__ void trial ();
 
@@ -12,32 +13,6 @@ void distance ( const T *x_i, const T *x_j, T *x_ij ) {
     x_ij[1] = x_i[1] - x_j[1];
     x_ij[2] = x_i[2] - x_j[2];
 };
-
-/**
- * @brief Fetch memory from global to shared.
- *
- * In principle that's just a memory copy, irrespective of whether the memory
- * is copyed from or to the gobal memory.
- */
-template <size_t D,typename T>
-__device__
-inline void fetchFromGlobalMemory ( T *mySharedArray, const T *x ) {
-	for( size_t d = 0; d < D; ++ d )
-		mySharedArray[d] = x[d];
-}
-
-/**
- * @brief Helper function to copy memory.
- *
- * This is the same function as `fetchFromGlobalMemory()` but I call it differently
- * to keep the m logically separated.
- */
-template <size_t D,typename T>
-__device__
-inline void writeToGlobalMemory ( T *x, const T *mySharedArray ) {
-	fetchFromGlobalMemory<D>( x, mySharedArray );
-}
-
 template <size_t N, size_t D, typename T>
 __global__ 
 void cudaLeapFrogVerlet( T* x, T* v ) {
