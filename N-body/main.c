@@ -48,27 +48,26 @@ cudaCheckError( cudaError_t errorCode ) {
  *
  * The function has been taken from `0_Simple/cudaOpenMp/cudaOpenMP.cu`.
  */
-    void
-cudaPrintDeviceInfo() {
+void cudaPrintDeviceInfo( FILE *stream = stderr ) {
     // determine the number of CUDA capable GPUs
 	int numGPUs = 0;
 	cudaGetDeviceCount( &numGPUs );
     if ( numGPUs < 1 ) {
-        fprintf( stderr, "no CUDA capable devices were detected\n");
+        fprintf( stream, "no CUDA capable devices were detected\n");
         exit( EXIT_FAILURE );
     }
 
     // display CPU and GPU configuration
-    printf("number of host CPUs:\t%d\n", omp_get_num_procs());
-    printf("number of CUDA devices:\t%d\n", numGPUs);
+    fprintf( stream, "number of host CPUs:\t%d\n", omp_get_num_procs());
+    fprintf( stream, "number of CUDA devices:\t%d\n", numGPUs);
 
     for ( int i = 0; i < numGPUs; ++ i) {
         cudaDeviceProp dprop;
         cudaGetDeviceProperties(&dprop, i);
-        printf("   %d: %s\n", i, dprop.name);
+        fprintf( stream, "   %d: %s\n", i, dprop.name);
     }
 
-    printf("---------------------------\n");
+    fprintf( stream, "---------------------------\n");
 }
 	int
 main () {
@@ -131,8 +130,8 @@ main () {
 	for ( unsigned t = 0; t < 1; t += 1 ) {
 
 		for ( unsigned int j = 0; j < 1; ++ j ) {
-			for( size_t s = 0; s < numOfStreams; ++ s )
-				cudaLeapFrogVerlet<1,1,float> <<< dimGrid, 1, 0, stream[s] >>> ( device_x + s, device_v + s );
+//			for( size_t s = 0; s < numOfStreams; ++ s )
+				cudaLeapFrogVerlet<1,1,float> <<< dimGrid, dimBlock /*, 0, stream[s]*/ >>> ( device_x /* + s*/, device_v /*+ s */);
 		}
 
 //		printf( "%u\t", t );
