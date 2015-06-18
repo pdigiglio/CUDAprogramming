@@ -1,40 +1,52 @@
-COMMONFLAGS =
+INCDIR     = /usr/local/cuda/samples/common/inc/ /usr/local/cuda/targets/x86_64-linux/include/
+INCLUDE    = $(addprefix -I,$(INCDIR))
 
-CUDAFLAGS = -Xcompiler -fopenmp -arch=sm_20 -I/usr/local/cuda/samples/common/inc/ -m64 -D_DEBUG # --optimize 2 
-CXXFLAGS  = -fopenmp -Wall
+CPPFLAGS   = -Xcompiler -fopenmp -arch=sm_20 $(INCLUDE) -m64 -D_DEBUG # -std=c++11
+DEBUG      = -g -G
 
-CPPFLAGS  =  $(COMMONFLAGS) $(CUDAFLAGS)
+CPP        = nvcc
+MKDEP      = g++ $(INCLUDE) -MD
+CUDAMKDEP  = nvcc $(INCLUDE) -M
 
-OFLAGS      = -c
-CUDAOFLAGS  = -x cu -dc
-OBJECTFLAGS = $(COMMONFLAGS) $(CUDAOFLAGS)
-
-CXX=nvcc
+# Check if debug mode is on, if not use optimization flags
+ifeq ($(mode),debug)
+	CPPFLAGS += $(DEBUG)
+else
+	CPPFLAGS += --optimize 2
+endif
 
 .PHONY: clean distclean doc docshow
 
 main: $(patsubst %.cu,%.o,$(wildcard *.cu)) $(patsubst %.c,%.o,$(wildcard *.c)) $(patsubst %.cc,%.o,$(wildcard *.cc))
-	$(CXX) $(CPPFLAGS) $+ -o $@
+	$(CPP) $(CPPFLAGS) $+ -o $@
+	
+-include main.d
 
 # want to build again modules even if (only) header is changed
 %.o: %.cc %.h MakefileCUDA
-	$(CXX) $(CPPFLAGS) $(OBJECTFLAGS) $< -o $@
+	$(CUDAMKDEP) $< -o $(patsubst %.o,%.d,$@)
+	$(CPP) $(CPPFLAGS) --x c++ -dc $< -o $@
 
 %.o: %.c MakefileCUDA
-	$(CXX) $(CPPFLAGS) $(OBJECTFLAGS) $< -o $@
+	$(CUDAMKDEP) $< -o $(patsubst %.o,%.d,$@) --x c++
+	$(CPP) $(CPPFLAGS) --x cu -dc $< -o $@
 
 %.o: %.cu MakefileCUDA
-	$(CXX) $(CPPFLAGS) $(OBJECTFLAGS) $< -o $@
+	$(CUDAMKDEP) $< -o $(patsubst %.o,%.d,$@) --x cu
+	$(CPP) $(CPPFLAGS) --x cu -dc $< -o $@
 
 # generate documentation with doxygen
 doc:
-	doxygen && make -C latex
+	doxygen && make -C latex &
 
+# generate documentation with doxygen
+# and call evince to display it in background
 docshow: doc
-	evince latex/refman.pdf
+	evince latex/refman.pdf &
 
 clean:
-	rm --recursive --verbose --force *.o
+	rm --recursive --verbose --force *.o *.d
 
 distclean: clean
+	@echo
 	rm --recursive --verbose --force main
