@@ -1,26 +1,41 @@
-CPPFLAGS= -Wall
+CPPFLAGS   = -Wall -Wextra -m64 -march=native -mtune=native -O2
+
+# g++ is needed if you want to use templates
+CPP        = g++ #gcc -std=c99
+MAKEDEPEND = $(CPP) -M
 
 .PHONY: clean distclean doc docshow
 
-main: $(patsubst %.c,%.o,$(wildcard *.c)) $(patsubst %.cc,%.o,$(wildcard *.cc))
-	g++ $(CPPFLAGS) $+ -o $@
 
-# want to build again modules even if (only) header is changed
-%.o: %.cc %.h Makefile
-	g++ $(CPPFLAGS) -c $< -o $@
+main: %: $(patsubst %.c,%.o,%.c) $(patsubst %.cc,%.o,$(wildcard *.cc))
+	$(CPP) $(CPPFLAGS) $+ -o $@
+
+-include main.d # $($(wildcard *.c):.c=.d) # $($(wildcard *.cc):.cc=.d)
+
+%.o: %.cc Makefile
+	$(CPP) $(CPPFLAGS) -MD -c $< -o $@
 
 %.o: %.c Makefile
-	g++ $(CPPFLAGS) -c $< -o $@
+	$(CPP) $(CPPFLAGS) -MD -c $< -o $@
+
+%.d:%.c
+	$(MAKEDEPEND) $< -o $@
+
+createTimeEvolution: %: %.o
+	$(CPP) $(CPPFLAGS) -MD $+ -o $@
 
 # generate documentation with doxygen
 doc:
 	doxygen && make -C latex
 
+# generate documentation with doxygen
+# and call evince to display it in background
 docshow: doc
-	evince latex/refman.pdf
+	evince latex/refman.pdf &
 
 clean:
-	rm --recursive --verbose --force *.o
+	rm --recursive --verbose --force *.o *.d
 
 distclean: clean
-	rm --recursive --verbose --force main
+	@echo
+	rm --recursive --verbose --force main createTimeEvolution
