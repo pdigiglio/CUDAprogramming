@@ -23,15 +23,15 @@ main: $(patsubst %.cu,%.o,$(wildcard *.cu)) $(patsubst %.c,%.o,$(wildcard *.c)) 
 -include main.d
 
 # want to build again modules even if (only) header is changed
-%.o: %.cc %.h MakefileCUDA
+%.o: %.cc %.h Makefile
 	$(CUDAMKDEP) $< -o $(patsubst %.o,%.d,$@)
 	$(CPP) $(CPPFLAGS) --x c++ -dc $< -o $@
 
-%.o: %.c MakefileCUDA
+%.o: %.c Makefile
 	$(CUDAMKDEP) $< -o $(patsubst %.o,%.d,$@) --x c++
 	$(CPP) $(CPPFLAGS) --x cu -dc $< -o $@
 
-%.o: %.cu MakefileCUDA
+%.o: %.cu Makefile
 	$(CUDAMKDEP) $< -o $(patsubst %.o,%.d,$@) --x cu
 	$(CPP) $(CPPFLAGS) --x cu -dc $< -o $@
 
