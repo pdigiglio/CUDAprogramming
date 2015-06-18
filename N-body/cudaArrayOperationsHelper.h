@@ -48,5 +48,15 @@ inline void writeToGlobalMemory ( T *x, const T *mySharedArray ) {
 	fetchFromGlobalMemory<D>( x, mySharedArray );
 }
 
+/**
+ * @brief Stores distance among `x_i` and `x_j' into `x_ij`
+ */
+template <size_t D, typename T>
+__device__ 
+inline void distance ( const T *x_i, const T *x_j, T *x_ij ) {
+    x_ij[0] = x_i[0] - x_j[0];
+    x_ij[1] = x_i[1] - x_j[1];
+    x_ij[2] = x_i[2] - x_j[2];
+};
 
-#endif   /* ----- #ifndef CUDAARRAYOPERATIONSHELPER_INC  ----- */
+#endif   /* ----- CUDAARRAYOPERATIONSHELPER_INC  ----- */
