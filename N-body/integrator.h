@@ -10,21 +10,8 @@
 #include <stdlib.h>
 #include <math.h>
 
-extern const float functionCoeff[4];
-extern const float evolutionCoeff[4];
-/*
- * use literals for float
- */
-#define dt .001
-
-/*
- * @def EPS2
- * @brief This _small_ shifting will be use in F() to prevent division by \f$0\f$. 
- * @attention One should be careful in choosing the value of \f$\epsilon^2\f$, e.g. if the
- * type is `float` then \f$ 1/(\epsilon^2)^3\f$ _must_ be smaller than the maximum value
- * a `float` variable can hold.
- */
-#define EPS2 .002
+//extern const float functionCoeff[4];
+//extern const float evolutionCoeff[4];
 
 /**
  * @brief Force.
