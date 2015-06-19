@@ -35,9 +35,6 @@ inline T F ( const T *x_ij ) {
 	tmp += x_ij[1] * x_ij[1];
 	tmp += x_ij[2] * x_ij[2];
 
-//	fprintf( stderr, "square distance: %g\n", tmp - EPS2 );
-	
-
 	/** @return \f$1/(\sqrt{r^2 + \epsilon^2})^3\f$. */
 	return 1. / ( tmp * sqrtf( tmp ) );
 };
@@ -70,6 +67,22 @@ inline void leapFrogVerletUpdateVelocities ( T *v, const T *x, T scale ) {
 	v[1] += scale * x[1];
 	v[2] += scale * x[2];
 };
+
+/**
+ * @brief Kernel to update positions in the system.
+ *
+ * I'll use the default stream for this kernel so that there is an implicit synchronization
+ * after the call and I can go on in evaluating the new velocities.
+ *
+ * @attention I don't use any shared memory since it wouldn't help.
+ */
+template <size_t N, size_t S, typename T>
+__global__
+void cudaUpdateSystemGlobalPositions( T *x, const T *v ) {
+	size_t i = blockDim.x * blockIdx.x + threadIdx.x;
+
+	leapFrogVerletUpdatePositions<D>( x + i, v + j );
+}
 
 template <size_t N, size_t D, typename T>
 __global__ 
