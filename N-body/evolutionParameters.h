@@ -20,8 +20,8 @@
  *
  */
 
-#ifndef  EVOLUTIONPARAMETERS_INC
-#define  EVOLUTIONPARAMETERS_INC
+#ifndef  EVOLUTIONPARAMETERS_H_
+#define  EVOLUTIONPARAMETERS_H_
 
 #define dt .001
 
@@ -35,4 +35,4 @@
 #define EPS2 .002
 
 
-#endif   /* ----- #ifndef EVOLUTIONPARAMETERS_INC  ----- */
+#endif   /* ----- #ifndef EVOLUTIONPARAMETERS_H_  ----- */
