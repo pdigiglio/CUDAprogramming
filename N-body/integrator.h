@@ -8,13 +8,14 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "evolutionParameters.h"
 
 extern const float functionCoeff[4];
 extern const float evolutionCoeff[4];
 /*
  * use literals for float
  */
-#define dt .001f
+//#define dt .001f
 
 //__device__ __host__
 void rungeKutta ( float *x, float *v, size_t N );
