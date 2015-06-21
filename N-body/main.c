@@ -11,6 +11,7 @@
 // header located in /usr/local/cuda/samples/common/inc
 #include <helper_cuda.h>
 
+#include "genericHelperFunctions.h"
 //const unsigned int numOfParticles = 1;
 
 // TODO consider accepting these parameters as cmd-line args
@@ -19,56 +20,6 @@ const unsigned short int  GRID_SIZE = 1;
 
 const size_t numOfStreams = BLOCK_SIZE;
 
-/**
- * @brief Checks if there were errors in calling a CUDA function
- * 
- * To actually "enable" this function the program must be compiled with either
- * `-DDEBUG` or `-D_DEBUG` flags.
- *
- * @return the error code passed as argument
- */
-    inline cudaError_t
-cudaCheckError( cudaError_t errorCode ) {
-//	errorCode = cudaGetLastError();
-
-    // compile with -DDEBUG or -D_DEBUG option to enable this check
-#if defined(DEBUG) || defined(_DEBUG) 
-	if( errorCode != cudaSuccess ) {
-		fprintf( stderr, "%s\n", cudaGetErrorString( errorCode ) );
-//		exit( EXIT_FAILURE );
-        assert( errorCode == cudaSuccess );
-	}
-#endif
-
-    return errorCode;
-}
-
-/**
- * @brief Print GPU info and number of CPU cores
- *
- * The function has been taken from `0_Simple/cudaOpenMp/cudaOpenMP.cu`.
- */
-void cudaPrintDeviceInfo( FILE *stream = stderr ) {
-    // determine the number of CUDA capable GPUs
-	int numGPUs = 0;
-	cudaGetDeviceCount( &numGPUs );
-    if ( numGPUs < 1 ) {
-        fprintf( stream, "no CUDA capable devices were detected\n");
-        exit( EXIT_FAILURE );
-    }
-
-    // display CPU and GPU configuration
-    fprintf( stream, "number of host CPUs:\t%d\n", omp_get_num_procs());
-    fprintf( stream, "number of CUDA devices:\t%d\n", numGPUs);
-
-    for ( int i = 0; i < numGPUs; ++ i) {
-        cudaDeviceProp dprop;
-        cudaGetDeviceProperties(&dprop, i);
-        fprintf( stream, "   %d: %s\n", i, dprop.name);
-    }
-
-    fprintf( stream, "---------------------------\n");
-}
 	int
 main () {
 
