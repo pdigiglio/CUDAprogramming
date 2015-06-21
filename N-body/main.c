@@ -76,13 +76,17 @@ main () {
     cudaPrintDeviceInfo();
 
 
-	const size_t xEntries    = BLOCK_SIZE;
+	const size_t xEntries    = 3 * BLOCK_SIZE;
 	const size_t xMemorySize = xEntries * sizeof( float );
 	float *x = (float *) calloc( xEntries, xMemorySize );
 
-	const size_t vEntries    = BLOCK_SIZE;
+	const size_t vEntries    = 3 * BLOCK_SIZE;
 	const size_t vMemorySize = vEntries * sizeof( float );
 	float *v = (float *) calloc( vEntries, vMemorySize );
+
+	const size_t mEntries    = BLOCK_SIZE;
+	const size_t mMemorySize = mEntries * sizeof( float );
+	float m[ BLOCK_SIZE ] = {};
 
 	/* variable to control errors in CUDA calls */
 	cudaError_t errorCode = cudaSuccess;
@@ -96,12 +100,17 @@ main () {
     errorCode = cudaMalloc( &device_v, vMemorySize );
     cudaCheckError( errorCode );
 
-    // copy meory from host to device
+	float *device_m = NULL;
+	errorCode = cudaMalloc( &device_m, mMemorySize );
+	cudaCheckError( errorCode );
+
+    // copy memory from host to device
     errorCode = cudaMemcpy( device_x, x, xMemorySize, cudaMemcpyHostToDevice );
     cudaCheckError( errorCode );
     errorCode = cudaMemcpy( device_v, v, vMemorySize, cudaMemcpyHostToDevice );
     cudaCheckError( errorCode );
-
+    errorCode = cudaMemcpy( device_m, m, mMemorySize, cudaMemcpyHostToDevice );
+    cudaCheckError( errorCode );
 
     /* event to get CUDA execution time */
     cudaEvent_t start, stop;
@@ -117,21 +126,21 @@ main () {
 //	trial <<< dimGrid, dimBlock >>> ();
 //
 
-	// --------------------------------------------------------------------------------------
-	// create streams
-	//
-	fprintf( stderr, "Creating %zu streams... ", numOfStreams );
-	cudaStream_t stream[ numOfStreams ];
-	for ( size_t s = 0; s < numOfStreams; ++ s ) 
-		cudaCheckError( cudaStreamCreate( &( stream[s] ) ) );
-	fprintf( stderr, "done!\n" );
-	// --------------------------------------------------------------------------------------
+//	// --------------------------------------------------------------------------------------
+//	// create streams
+//	//
+//	fprintf( stderr, "Creating %zu streams... ", numOfStreams );
+//	cudaStream_t stream[ numOfStreams ];
+//	for ( size_t s = 0; s < numOfStreams; ++ s ) 
+//		cudaCheckError( cudaStreamCreate( &( stream[s] ) ) );
+//	fprintf( stderr, "done!\n" );
+//	// --------------------------------------------------------------------------------------
 
 	for ( unsigned t = 0; t < 1; t += 1 ) {
 
 		for ( unsigned int j = 0; j < 1; ++ j ) {
 //			for( size_t s = 0; s < numOfStreams; ++ s )
-				cudaLeapFrogVerlet<1,1,float> <<< dimGrid, dimBlock /*, 0, stream[s]*/ >>> ( device_x /* + s*/, device_v /*+ s */);
+				cudaLeapFrogVerlet<BLOCK_SIZE,3,float> <<< dimGrid, dimBlock, 10 * BLOCK_SIZE * sizeof( float ) /*, stream[s]*/ >>> ( device_x /* + s*/, device_v /*+ s */, device_m );
 		}
 
 //		printf( "%u\t", t );
@@ -150,6 +159,7 @@ main () {
     cudaCheckError( errorCode );
     errorCode = cudaMemcpy( v, device_v, vMemorySize, cudaMemcpyDeviceToHost );
     cudaCheckError( errorCode );
+	// XXX there is no need to copy back mass vector
 
     /* record stop on the same stream as start */
     cudaEventRecord( stop, 0 );
@@ -165,15 +175,15 @@ main () {
     cudaEventDestroy( stop );
     /* TODO checkError */
 
-	// -------------------------------------------------------------------------
-	// destroy streams
-	//
-	fprintf( stderr, "Destroying the streams... " );
-	for( size_t s = 0; s < numOfStreams; ++ s ) {
-		cudaCheckError( cudaStreamDestroy( stream[s] ) );
-	}
-	fprintf( stderr, "done!\n" );
-	// -----------------------------------------------------------------------
+//	// -------------------------------------------------------------------------
+//	// destroy streams
+//	//
+//	fprintf( stderr, "Destroying the streams... " );
+//	for( size_t s = 0; s < numOfStreams; ++ s ) {
+//		cudaCheckError( cudaStreamDestroy( stream[s] ) );
+//	}
+//	fprintf( stderr, "done!\n" );
+//	// -----------------------------------------------------------------------
 
     for( size_t i = 0; i < xEntries; ++ i ) {
         printf( "x[ %zu ] = %g\n", i, x[i] );
@@ -186,6 +196,9 @@ main () {
 
     errorCode = cudaFree( device_v );
     cudaCheckError( errorCode );
+
+	errorCode = cudaFree( device_m );
+	cudaCheckError( errorCode );
 
     free( x );
     free( v );
