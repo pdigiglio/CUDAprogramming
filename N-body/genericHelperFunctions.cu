@@ -1,7 +1,7 @@
 /**
  *
  *
- *           @name  genericHelperFunctions.cc
+ *           @name  genericHelperFunctions.cu
  *          @brief  Implementation file for header `genericHelperFunctions.h`
  *
  *        @version  1.0
