@@ -1,13 +1,14 @@
+/**
+ * @file cudaIntegrator.h
+ * @brief Implementation of Leapfrog Verlet integrator in CUDA
+ */
+
 #ifndef CUDAINTEGRATOR_H_
 #define CUDAINTEGRATOR_H_
 
 #include <stdio.h>
 #include "cudaArrayOperationsHelper.h"
 #include "evolutionParameters.h"
-
-__global__ void trial ();
-
-
 
 /**
  * @brief Evaluate part of the force.
