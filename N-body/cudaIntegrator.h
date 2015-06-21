@@ -10,7 +10,7 @@ __global__ void trial ();
 
 
 /**
- * @brief Force.
+ * @brief Evaluate part of the force.
  *
  * @param x_ij Particles displacement vector
  * @param D Space dimension (i.e. size of `x` pointer)
@@ -27,7 +27,7 @@ __global__ void trial ();
  */
 template <unsigned short D, typename T>
 __device__
-inline T F ( const T *x_ij ) {
+inline T basicInteraction ( const T *x_ij ) {
 
 	/** Evaluate \f$\epsilon^2+r^2 = \epsilon^2+x^2 + y^2 + z^2\f$. */
 	T tmp = EPS2;
@@ -68,6 +68,14 @@ inline void leapFrogVerletUpdateVelocities ( T *v, const T *a ) {
 	v[1] += dt * a[1];
 	v[2] += dt * a[2];
 };
+
+template <unsigned short D, typename T>
+__device__
+inline void leapFrogVerletUpdateAccelerations ( T *a, const T *x, T magnitude ) {
+	a[0] += magnitude * x[0];
+	a[1] += magnitude * x[1];
+	a[2] += magnitude * x[2];
+}
 
 /**
  * @brief Kernel to update positions in the system.
@@ -128,9 +136,7 @@ void cudaLeapFrogVerlet( T* x, T* v, const T *m ) {
 	// this points at the end of `evolvingParticlePosition[]`
 	T *const surroundingParticlePosition  = blockSharedMemory + 2 * D * blockDim.x;
 	// this points at the end of `surroundingParticlePosition[]`
-	T *const surroundingParticleMass = blockSharedMemory + 3 * D * blockDim.x;
-//	printf( "sizeof( evolvingParticleAcceleration ) = %u\n", sizeof( evolvingParticleAcceleration ) / sizeof( T ) );
-//	printf( "sizeof( evolvingParticlePosition ) = %u\n", sizeof( evolvingParticlePosition ) / sizeof( T ) );
+	T *const surroundingParticleMass      = blockSharedMemory + 3 * D * blockDim.x;
 
 	// fetch position and velocities of particle corresponding to i to store them
 	// into shared memory.
@@ -139,6 +145,10 @@ void cudaLeapFrogVerlet( T* x, T* v, const T *m ) {
 
 	// set accelerations to zero
 	setVectorToZero <D> ( evolvingParticleAcceleration + D * i );
+
+	// temporary variable to hold particle distances
+	// it's not shared among threads but it's private
+	T x_ij[D], accelerationModulus;
 
 	// N is assumed to be multiple of blockDim.x
 	const size_t numOfIterations = N / blockDim.x;
@@ -151,6 +161,14 @@ void cudaLeapFrogVerlet( T* x, T* v, const T *m ) {
 		// sync so that all memory is properly loaded
 		__syncthreads();
 
+		for( size_t j = 0; j < blockDim.x; ++ j ) {
+			// store particle distance into "buffer" `x_ij[]`
+			distance<D>( evolvingParticlePosition + D * i, surroundingParticlePosition + D * i, x_ij );
+
+			// update acceleration vector
+			accelerationModulus = basicInteraction<D>( x_ij ) * surroundingParticleMass[j];
+			leapFrogVerletUpdateAccelerations<D> ( evolvingParticleAcceleration + D * i, x_ij, accelerationModulus );
+		}
 	}
 
 	leapFrogVerletUpdateVelocities<D>( v + D * i, evolvingParticleAcceleration + threadIdx.x );
