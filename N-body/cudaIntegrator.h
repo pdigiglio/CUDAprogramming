@@ -56,16 +56,17 @@ inline void leapFrogVerletUpdatePositions( T *x, const T *v ) {
 /**
  * @brief Helper function
  *
+ * The time step `dt` is defined as a macro so I don't pass it as a value.
+ *
  * @param v velocity D-tuple to be updated
- * @param x displacement D-tuple "to be used as direction for the force"
- * @param scale is meant to be acceleration times time step, i.e. \f$a\,\mathrm{d}t\f$
+ * @param a acceleration D-tuple 
  */
 template <unsigned short D, typename T>
 __device__
-inline void leapFrogVerletUpdateVelocities ( T *v, const T *x, T scale ) {
-	v[0] += scale * x[0];
-	v[1] += scale * x[1];
-	v[2] += scale * x[2];
+inline void leapFrogVerletUpdateVelocities ( T *v, const T *a ) {
+	v[0] += dt * a[0];
+	v[1] += dt * a[1];
+	v[2] += dt * a[2];
 };
 
 /**
@@ -76,36 +77,83 @@ inline void leapFrogVerletUpdateVelocities ( T *v, const T *x, T scale ) {
  *
  * @attention I don't use any shared memory since it wouldn't help.
  */
-template <size_t N, size_t S, typename T>
+template <size_t N, size_t D, typename T>
 __global__
 void cudaUpdateSystemGlobalPositions( T *x, const T *v ) {
 	size_t i = blockDim.x * blockIdx.x + threadIdx.x;
 
-	leapFrogVerletUpdatePositions<D>( x + i, v + j );
+	leapFrogVerletUpdatePositions<D>( x + i, v + i );
 }
 
+/**
+ * @brief Helper function to set vector to zero.
+ */
+template <size_t D, typename T>
+__device__
+void setVectorToZero( T *x ) {
+	x[1] = (T) 0;
+	x[2] = (T) 0;
+	x[3] = (T) 0;
+}
+
+/**
+ * @brief
+ *
+ * At the beginning, each thread fetches velocity vectors of particles corresponding
+ * to its ID.
+ *
+ * Required amounth of shared memory is the following:
+ *  * `D * BLOCK_SIZE` for `evolvingParticleAcceleration[]`;
+ *  * `D * BLOCK_SIZE` for `evolvingParticlePosition[]`;
+ *  * `D * BLOCK_SIZE` for `surroundingParticlePosition[]`;
+ *  * `BLOCK_SIZE` for `surroundingParticlePosition[]`;
+ * So the total shared memory per block is `( 3*D + 1 ) * BLOCK_SIZE * sizeof( T )`.
+ *
+ * @param x vector of particle positions
+ * @param v vector of particle velocities
+ * @param m vector of partile masses
+ */
 template <size_t N, size_t D, typename T>
 __global__ 
-void cudaLeapFrogVerlet( T* x, T* v ) {
-	__shared__ T    evolvingParticle[ D * 32 ];
-//	__shared__ T surroungingParticle[ D * 32 ];
+void cudaLeapFrogVerlet( T* x, T* v, const T *m ) {
+	/**
+	 * Shared memory is dynamically allocated at run-time and the size is taken from the
+	 * third argument of the kernel <<< ... >>>  call.
+	 */
+	extern __shared__ T blockSharedMemory[];
 
+	T *const evolvingParticleAcceleration = blockSharedMemory;
+	// this points at the end of `evolvingParticleAcceleration[]`
+	T *const evolvingParticlePosition     = blockSharedMemory + D * blockDim.x;
+	// this points at the end of `evolvingParticlePosition[]`
+	T *const surroundingParticlePosition  = blockSharedMemory + 2 * D * blockDim.x;
+	// this points at the end of `surroundingParticlePosition[]`
+	T *const surroundingParticleMass = blockSharedMemory + 3 * D * blockDim.x;
+//	printf( "sizeof( evolvingParticleAcceleration ) = %u\n", sizeof( evolvingParticleAcceleration ) / sizeof( T ) );
+//	printf( "sizeof( evolvingParticlePosition ) = %u\n", sizeof( evolvingParticlePosition ) / sizeof( T ) );
+
+	// fetch position and velocities of particle corresponding to i to store them
+	// into shared memory.
     unsigned i = blockDim.x * blockIdx.x + threadIdx.x;
-	fetchFromGlobalMemory <D> ( evolvingParticle + i, x + i ); 
+	fetchFromGlobalMemory <D> ( evolvingParticlePosition + D * i, x + D * i ); 
 
-	evolvingParticle[i] ++;
+	// set accelerations to zero
+	setVectorToZero <D> ( evolvingParticleAcceleration + D * i );
 
-	writeToGlobalMemory<D>( x + i, evolvingParticle + i );
+	// N is assumed to be multiple of blockDim.x
+	const size_t numOfIterations = N / blockDim.x;
+	for( size_t it = 0; it < numOfIterations; ++ it ) {
+		// fetch positions of particle to evaluate the interactions with
+		fetchFromGlobalMemory<D> ( surroundingParticlePosition + D * threadIdx.x, x + D * ( it + threadIdx.x ) );
+		// mass is scalar so only one component per thread needs to be fetched
+		fetchFromGlobalMemory<1> ( surroundingParticleMass + threadIdx.x, m + it + threadIdx.x );
 
+		// sync so that all memory is properly loaded
+		__syncthreads();
 
+	}
 
-//    printf( "Args [%u]: x %p y %p N %zu D %zu\n", threadID, (void*) x, (void*) v, N , D );
-    // if you do like that then it may be that some other thread
-    // writes in-between
-//    printf( "block %u (of %u), %u\n", blockIdx.x, gridDim.x, threadIdx.x );
-//    printf( "block %u (of %u), %u\n", blockIdx.y, gridDim.y, threadIdx.y );
-//    printf( "block %u (of %u), %u\n", blockIdx.z, gridDim.z, threadIdx.z );
-
+	leapFrogVerletUpdateVelocities<D>( v + D * i, evolvingParticleAcceleration + threadIdx.x );
 };
 
 
