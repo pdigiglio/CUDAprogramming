@@ -23,7 +23,7 @@
 #ifndef  EVOLUTIONPARAMETERS_H_
 #define  EVOLUTIONPARAMETERS_H_
 
-#define dt .001
+#define dt .0005
 
 /*
  * @def EPS2
@@ -32,7 +32,7 @@
  * type is `float` then \f$ 1/(\epsilon^2)^3\f$ _must_ be smaller than the maximum value
  * a `float` variable can hold.
  */
-#define EPS2 .002
+#define EPS2 .001
 
 
 #endif   /* ----- #ifndef EVOLUTIONPARAMETERS_H_  ----- */
