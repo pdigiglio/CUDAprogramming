@@ -62,4 +62,39 @@ cudaCheckError( cudaError_t errorCode ) {
  */
 void cudaPrintDeviceInfo( FILE *stream = stderr );
 
+/**
+ * @brief Template to copy initial configuration from Host to Device
+ */
+template <typename T, unsigned short D, size_t numOfParticles >
+inline void copyConfigurationToDevice (
+		const T *x, T **device_x, size_t xMemorySize,
+		const T *v, T **device_v, size_t vMemorySize,
+		const T *m, T **device_m, size_t mMemorySize ) {
+
+	fprintf( stderr, "Copying memory from Host to Device... ", numOfParticles );
+
+	cudaError_t errorCode = cudaSuccess;
+
+    // allocate device memory
+    errorCode = cudaMalloc( device_x, xMemorySize );
+    cudaCheckError( errorCode );
+
+    errorCode = cudaMalloc( device_v, vMemorySize );
+    cudaCheckError( errorCode );
+
+	errorCode = cudaMalloc( device_m, mMemorySize );
+	cudaCheckError( errorCode );
+
+    // copy memory from host to device
+    errorCode = cudaMemcpy( *device_x, x, xMemorySize, cudaMemcpyHostToDevice );
+    cudaCheckError( errorCode );
+    errorCode = cudaMemcpy( *device_v, v, vMemorySize, cudaMemcpyHostToDevice );
+    cudaCheckError( errorCode );
+    errorCode = cudaMemcpy( *device_m, m, mMemorySize, cudaMemcpyHostToDevice );
+    cudaCheckError( errorCode );
+
+	fprintf( stderr, "done!\n" );
+}
+
+
 #endif /* GENERICHELPERFUNCTIONS_H_ */
