@@ -37,7 +37,7 @@ inline T basicInteraction ( const T *x_ij ) {
 	tmp += x_ij[2] * x_ij[2];
 
 	/** @return \f$1/(\sqrt{r^2 + \epsilon^2})^3\f$. */
-	return 1. / ( tmp * sqrtf( tmp ) );
+	return - 1. / ( tmp * sqrtf( tmp ) );
 };
 
 /**
@@ -58,6 +58,9 @@ inline void leapFrogVerletUpdatePositions( T *x, const T *v ) {
  * @brief Helper function
  *
  * The time step `dt` is defined as a macro so I don't pass it as a value.
+ *
+ * @attention This is the same function as `leapFrogVerletUpdateAccelerations()` but
+ * I call it differently to keep them logically separated.
  *
  * @param v velocity D-tuple to be updated
  * @param a acceleration D-tuple 
@@ -91,7 +94,7 @@ __global__
 void cudaUpdateSystemGlobalPositions( T *x, const T *v ) {
 	size_t i = blockDim.x * blockIdx.x + threadIdx.x;
 
-	leapFrogVerletUpdatePositions<D>( x + i, v + i );
+	leapFrogVerletUpdatePositions<D>( x + D * i, v + D * i );
 }
 
 /**
@@ -141,11 +144,15 @@ void cudaLeapFrogVerlet( T* x, T* v, const T *m ) {
 
 	// fetch position and velocities of particle corresponding to i to store them
 	// into shared memory.
+	// XXX I have to use `threadIdx.x` in the first parameter otherwise I run out
+	// of the vectory boundaries
     unsigned i = blockDim.x * blockIdx.x + threadIdx.x;
-	fetchFromGlobalMemory <D> ( evolvingParticlePosition + D * i, x + D * i ); 
+//	printf( "b: %u bs: %u t: %u i: %u\n", blockIdx.x, blockDim.x, threadIdx.x, i );
+
+	fetchFromGlobalMemory <D> ( evolvingParticlePosition + D * threadIdx.x, x + D * i ); 
 
 	// set accelerations to zero
-	setVectorToZero <D> ( evolvingParticleAcceleration + D * i );
+	setVectorToZero <D> ( evolvingParticleAcceleration + D * threadIdx.x );
 
 	// temporary variable to hold particle distances
 	// it's not shared among threads but it's private
@@ -164,15 +171,15 @@ void cudaLeapFrogVerlet( T* x, T* v, const T *m ) {
 
 		for( size_t j = 0; j < blockDim.x; ++ j ) {
 			// store particle distance into "buffer" `x_ij[]`
-			distance<D>( evolvingParticlePosition + D * i, surroundingParticlePosition + D * i, x_ij );
+			distance<D>( evolvingParticlePosition + D * threadIdx.x, surroundingParticlePosition + D * j, x_ij );
 
 			// update acceleration vector
 			accelerationModulus = basicInteraction<D>( x_ij ) * surroundingParticleMass[j];
-			leapFrogVerletUpdateAccelerations<D> ( evolvingParticleAcceleration + D * i, x_ij, accelerationModulus );
+			leapFrogVerletUpdateAccelerations<D> ( evolvingParticleAcceleration + D * threadIdx.x, x_ij, accelerationModulus );
 		}
 	}
 
-	leapFrogVerletUpdateVelocities<D>( v + D * i, evolvingParticleAcceleration + threadIdx.x );
+	leapFrogVerletUpdateVelocities<D>( v + D * i, evolvingParticleAcceleration + D * threadIdx.x );
 };
 
 
