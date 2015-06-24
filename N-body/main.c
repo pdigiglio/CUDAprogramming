@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <time.h>
 
 /**
  * @brief Number of space dimensions.
@@ -26,7 +27,7 @@ const unsigned int blockSize      = 32;
  * @attention This __must be a multiple of 4__ since in later functions a 4x manual loop 
  * unrolling is performed.
  */
-const unsigned int numOfParticles = 64; /* XXX this must be even! */
+const unsigned int numOfParticles = 1024; /* XXX this must be even! */
 
 
 	int
@@ -38,8 +39,8 @@ main ( int argc, char *argv[] ) {
 	fprintf(stderr, "%s Starting...\n\n", argv[0]);;
 
 
-	long double *x = NULL, *v = NULL, *m = NULL;
-	initializeSystem < long double, spaceDimension, numOfParticles > (x, v, m );
+	float *x = NULL, *v = NULL, *m = NULL;
+	initializeSystem < float, spaceDimension, numOfParticles > (x, v, m );
 //	return 0;
 
 //	/**
@@ -122,8 +123,10 @@ main ( int argc, char *argv[] ) {
 //		v[j+7] = (double) 1; // mass
 //	}
 
-	const unsigned int MaxNumberOfTimeSteps = 100000;
-	const unsigned int TimeStepIncrement    = 10;
+	clock_t start = clock();
+
+	const unsigned int MaxNumberOfTimeSteps = 10000;
+	const unsigned int TimeStepIncrement    = 1;
 	for ( unsigned int t = 0; t < MaxNumberOfTimeSteps; t += TimeStepIncrement ) {
 
 		fprintf( stderr, "Evolving particles... [step %u of %u]\r", t , MaxNumberOfTimeSteps );
@@ -131,8 +134,8 @@ main ( int argc, char *argv[] ) {
 
 		printf( "%u\t", t );
 		for( unsigned int i = 0; i < numOfParticles * spaceDimension;  i += 6 ) {
-			printf( "%.6Lg\t%.6Lg\t%.6Lg\t", x[i ], x[i+1], x[i+2] );
-			printf( "%.6Lg\t%.6Lg\t%.6Lg\t", x[i+3], x[i+4], x[i+5] );
+			printf( "%.6g\t%.6g\t%.6g\t", x[i ], x[i+1], x[i+2] );
+			printf( "%.6g\t%.6g\t%.6g\t", x[i+3], x[i+4], x[i+5] );
 		}
 
 		printf( "\n" );
@@ -145,6 +148,8 @@ main ( int argc, char *argv[] ) {
 //		fprintf( stderr, " again > step %u of %u\n", t , MaxNumberOfTimeSteps );
 	}
 	fprintf( stderr, "Evolving particles... done!                                 \n" );
+
+	fprintf( stderr, "Execution time: %g\n", ( (double) clock() - start ) / CLOCKS_PER_SEC );
 
 	// free memory
 	fprintf( stderr, "Freeing memory... " );
