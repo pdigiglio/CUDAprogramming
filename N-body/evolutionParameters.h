@@ -23,7 +23,7 @@
 #ifndef  EVOLUTIONPARAMETERS_INC
 #define  EVOLUTIONPARAMETERS_INC
 
-#define dt .001
+#define dt .001f
 
 /*
  * @def EPS2
