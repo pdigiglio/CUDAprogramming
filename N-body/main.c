@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
+#include <errno.h>
 
 #include <omp.h>
 
@@ -22,8 +23,8 @@ const unsigned int spaceDimension = 3;
 /**
  * @brief Size of the blocks
  */
-const unsigned int BLOCK_SIZE     = 32;
-const unsigned int GRID_SIZE      = 1;
+const unsigned int BLOCK_SIZE     = 32 * 32;
+const unsigned int GRID_SIZE      = 4;
 
 /**
  * @brief Number of particles in the system.
@@ -33,15 +34,11 @@ const unsigned int GRID_SIZE      = 1;
  */
 const unsigned int numOfParticles = GRID_SIZE * BLOCK_SIZE; /* XXX this must be even! */
 
-template <size_t N, typename T>
-void printVector( const T *x, FILE *stream = stdout ) {
-	for( size_t i = 0; i < N; ++ i ) {
-		fprintf( stream, "%.6g\t", x[i] );
-	}
-}
-
 	int
 main ( int argc, char *argv[] ) {
+
+    // random seed for random generator
+    srand( time( NULL ) );
 
 	if ( argc > 1 )
 		fprintf( stderr, "Too many arguments: program doesn't accept any!\n" );
@@ -49,57 +46,65 @@ main ( int argc, char *argv[] ) {
 	fprintf(stderr, "%s Starting...\n\n", argv[0]);;
     cudaPrintDeviceInfo();
 
-	float *x = NULL, *v = NULL, *m = NULL;
-	initializeSystem < float, spaceDimension, numOfParticles > ( x, v, m );
-
-//	printVector<spaceDimension * numOfParticles>(x);
-//	return 0;
+    // allocate host memory
+	double *x = NULL, *v = NULL, *m = NULL;
+	initializeSystem < double, spaceDimension, numOfParticles > ( x, v, m );
 
 	size_t xMemorySize = spaceDimension * numOfParticles * sizeof( x[0] );
 	size_t vMemorySize = spaceDimension* numOfParticles * sizeof( v[0] );
 	size_t mMemorySize = numOfParticles * sizeof( m[0] );
 
-	float *device_x = NULL, *device_v = NULL, *device_m = NULL;
-	copyConfigurationToDevice < float, spaceDimension, numOfParticles > (
+    // allocate device memory and copy host memory
+	double *device_x = NULL, *device_v = NULL, *device_m = NULL;
+	copyConfigurationToDevice < double, spaceDimension, numOfParticles > (
 			x, &device_x, xMemorySize,
 			v, &device_v, vMemorySize,
 			m, &device_m, mMemorySize );
 
-	// just for debug: to check they're not NULL
-//	printf( "%p %p %p\n", (void *) device_x, (void *) device_v, (void *) device_m );
-
-	/* variable to control errors in CUDA calls */
+	// variable to control errors in CUDA calls
 	cudaError_t errorCode = cudaSuccess;
 
-    /* event to get CUDA execution time */
+    // event to get CUDA execution time
     cudaEvent_t start, stop;
     cudaCheckError( cudaEventCreate( &start ) );
     cudaCheckError( cudaEventCreate( &stop ) );
 
-    /* record start (0 = default stream) */
+    // record start (0 = default stream)
     cudaEventRecord( start, 0 );
 
     // variables to control block and grid dimension
-    dim3  dimBlock( BLOCK_SIZE /*, BLOCK_SIZE */ );
-    dim3   dimGrid( GRID_SIZE /*,  GRID_SIZE */ );
+    dim3  dimBlock( BLOCK_SIZE );
+    dim3   dimGrid( GRID_SIZE  );
+
+    char outFileName[80];
+    FILE *outFile = NULL;
 
 	const unsigned int MaxNumberOfTimeSteps = 10000;
-	const unsigned int TimeStepIncrement    = 1;
+	const unsigned int TimeStepIncrement    = 5;
 	for ( unsigned t = 0; t < MaxNumberOfTimeSteps; t += TimeStepIncrement ) {
 
 		fprintf( stderr, "Evolving particles... [step %u of %u]\r", t , MaxNumberOfTimeSteps );
 
-		printf( "%u\t", t );
-		for( unsigned int i = 0; i < numOfParticles * spaceDimension;  i += 6 ) {
-			printf( "%.6g\t%.6g\t%.6g\t", x[i  ], x[i+1], x[i+2] );
-			printf( "%.6g\t%.6g\t%.6g\t", x[i+3], x[i+4], x[i+5] );
-		}
-		printf( "\n" );
+        sprintf( outFileName, "grav%06u.csv", t / TimeStepIncrement );
+        outFile = fopen( outFileName, "w" );
+        if( !outFile ) {
+            fprintf ( stderr, "couldn't open file '%s'; %s\n",
+                    outFileName, strerror(errno) );
+            exit (EXIT_FAILURE);
+        }
+
+        printVectorAsCSV<numOfParticles,spaceDimension>( x, outFile );
+
+        if( fclose( outFile ) == EOF ) {         /* close output file   */
+            fprintf ( stderr, "couldn't close file '%s'; %s\n",
+                    outFileName, strerror(errno) );
+            exit (EXIT_FAILURE);
+        }
 
 		for ( unsigned int j = 0; j < TimeStepIncrement; ++ j ) {
-			cudaUpdateSystemGlobalPositions<numOfParticles,spaceDimension,float> <<<dimGrid,dimBlock>>>( device_x, device_v );
+			cudaUpdateSystemGlobalPositions<numOfParticles,spaceDimension,double> <<<dimGrid,dimBlock>>>( device_x, device_v );
 			// implicit synchronization here!!
-			cudaLeapFrogVerlet<numOfParticles,spaceDimension,float> <<< dimGrid, dimBlock, 10 * BLOCK_SIZE * sizeof( float ) >>> ( device_x, device_v, device_m );
+			cudaLeapFrogVerlet<numOfParticles,spaceDimension,double> <<< dimGrid, dimBlock, (spaceDimension + 1) * BLOCK_SIZE * sizeof( double ) >>> ( device_x, device_v, device_m );
 		}
 
 		// collect results
@@ -108,15 +113,6 @@ main ( int argc, char *argv[] ) {
 	}
 
 	fprintf( stderr, "Evolving particles... done!                                 \n" );
-//    errorCode = cudaGetLastError();
-//    cudaCheckError( errorCode );
-
-    // copy meory from host to device
-//    errorCode = cudaMemcpy( x, device_x, xMemorySize, cudaMemcpyDeviceToHost );
-//    cudaCheckError( errorCode );
-//    errorCode = cudaMemcpy( v, device_v, vMemorySize, cudaMemcpyDeviceToHost );
-//    cudaCheckError( errorCode );
-	// XXX there is no need to copy back mass vector
 
     /* record stop on the same stream as start */
     cudaEventRecord( stop, 0 );
@@ -127,14 +123,27 @@ main ( int argc, char *argv[] ) {
 
     fprintf( stderr, "CUDA kernel execution time: %g ms\n", elapsedTime );
 
-    cudaEventDestroy( start );
-    /* TODO checkError */
-    cudaEventDestroy( stop );
-    /* TODO checkError */
-
-//    for( size_t i = 0; i < spaceDimension * numOfParticles; ++ i ) {
-//        printf( "x[ %zu ] = %g\n", i, x[i] );
+//    char time_file_name[80]; // = "timeDouble_32x32_2.txt";       /* output-file name    */
+//    sprintf( time_file_name, "timeDouble_%u_%u.txt", BLOCK_SIZE, GRID_SIZE );
+//    FILE *timeOutputFile  = fopen( time_file_name, "a" );   /* output-file pointer */
+//
+//    if ( timeOutputFile == NULL ) {
+//            fprintf ( stderr, "couldn't open file '%s'; %s\n",
+//                                time_file_name, strerror(errno) );
+//                exit (EXIT_FAILURE);
 //    }
+//
+//    fprintf( timeOutputFile, "%g\n", elapsedTime / 1000 );
+//
+//    if( fclose( timeOutputFile ) == EOF ) {         /* close output file   */
+//            fprintf ( stderr, "couldn't close file '%s'; %s\n",
+//                                time_file_name, strerror(errno) );
+//                exit (EXIT_FAILURE);
+//    }
+
+
+    cudaCheckError( cudaEventDestroy( start ) );
+    cudaCheckError( cudaEventDestroy( stop ) );
 
 	// XXX this shouldn't be needed because of the previous sync
 	cudaDeviceSynchronize();
