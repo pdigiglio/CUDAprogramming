@@ -96,5 +96,45 @@ inline void copyConfigurationToDevice (
 	fprintf( stderr, "done!\n" );
 }
 
+/**
+ * @brief Prints a vector as a column (a row for each entry)
+ */
+template <size_t N, size_t D, typename T>
+void printVectorAsColumn( const T *x, FILE *stream = stdout ) {
+	for( size_t i = 0; i < N * D; ++ i ) {
+		fprintf( stream, "%.6g\t", x[i] );
+	}
+}
+
+/**
+ * @brief Prints a vector as a three-column CSV with an header.
+ *
+ * Three columns are printed, separated by a comma and _no spaces_.
+ * Also a header is printed (i.e. "x,y,z" is printed at the beginning
+ * of the vector).
+ */
+template<size_t N, size_t D, typename T>
+void printVectorAsCSV( const T *x, FILE *stream = stdout ) {
+    // print header
+    fprintf( stream, "x,y,z\n" );
+
+    for ( size_t i = 0; i < D * N; i += 6 ) {
+        fprintf( stream, "%.6g,%.6g,%.6g\n", x[i  ], x[i+1], x[i+2] );
+        fprintf( stream, "%.6g,%.6g,%.6g\n", x[i+3], x[i+4], x[i+5] );
+    }
+}
+
+/**
+ * @brief Prints a vector as a row.
+ */
+template<size_t N, size_t D, typename T>
+void printVectorAsRow( const T *x, FILE *stream = stdout ) {
+		printf( "%u\t", t );
+		for( unsigned int i = 0; i < numOfParticles * spaceDimension;  i += 6 ) {
+			printf( "%.6g\t%.6g\t%.6g\t", x[i  ], x[i+1], x[i+2] );
+			printf( "%.6g\t%.6g\t%.6g\t", x[i+3], x[i+4], x[i+5] );
+		}
+		printf( "\n" );
+}
 
 #endif /* GENERICHELPERFUNCTIONS_H_ */
