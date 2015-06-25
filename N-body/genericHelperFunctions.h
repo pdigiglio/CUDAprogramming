@@ -128,9 +128,9 @@ void printVectorAsCSV( const T *x, FILE *stream = stdout ) {
  * @brief Prints a vector as a row.
  */
 template<size_t N, size_t D, typename T>
-void printVectorAsRow( const T *x, FILE *stream = stdout ) {
+void printVectorAsRow( const T *x, unsigned int t, FILE *stream = stdout ) {
 		printf( "%u\t", t );
-		for( unsigned int i = 0; i < numOfParticles * spaceDimension;  i += 6 ) {
+		for( unsigned int i = 0; i < D * N; i += 6 ) {
 			printf( "%.6g\t%.6g\t%.6g\t", x[i  ], x[i+1], x[i+2] );
 			printf( "%.6g\t%.6g\t%.6g\t", x[i+3], x[i+4], x[i+5] );
 		}
