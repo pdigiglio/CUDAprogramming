@@ -71,7 +71,7 @@ inline void copyConfigurationToDevice (
 		const T *v, T **device_v, size_t vMemorySize,
 		const T *m, T **device_m, size_t mMemorySize ) {
 
-	fprintf( stderr, "Copying memory from Host to Device... ", numOfParticles );
+	fprintf( stderr, "Copying memory from Host to Device... "/*, numOfParticles*/ );
 
 	cudaError_t errorCode = cudaSuccess;
 
