@@ -49,6 +49,17 @@ inline void writeToGlobalMemory ( T *x, const T *mySharedArray ) {
 }
 
 /**
+ * @brief Helper function to set vector to zero.
+ */
+template <size_t D, typename T>
+__device__
+void setVectorToZero( T *x ) {
+	x[0] = (T) 0;
+	x[1] = (T) 0;
+	x[2] = (T) 0;
+}
+
+/**
  * @brief Stores distance among `x_i` and `x_j' into `x_ij`
  */
 template <size_t D, typename T>
