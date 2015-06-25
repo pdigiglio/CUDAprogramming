@@ -98,17 +98,6 @@ void cudaUpdateSystemGlobalPositions( T *x, const T *v ) {
 }
 
 /**
- * @brief Helper function to set vector to zero.
- */
-template <size_t D, typename T>
-__device__
-void setVectorToZero( T *x ) {
-	x[1] = (T) 0;
-	x[2] = (T) 0;
-	x[3] = (T) 0;
-}
-
-/**
  * @brief
  *
  * At the beginning, each thread fetches velocity vectors of particles corresponding
@@ -127,36 +116,34 @@ void setVectorToZero( T *x ) {
  */
 template <size_t N, size_t D, typename T>
 __global__ 
-void cudaLeapFrogVerlet( T* x, T* v, const T *m ) {
+void cudaLeapFrogVerlet( const T* x, T* v, const T *m ) {
 	/**
 	 * Shared memory is dynamically allocated at run-time and the size is taken from the
 	 * third argument of the kernel <<< ... >>>  call.
 	 */
 	extern __shared__ T blockSharedMemory[];
 
-	T *const evolvingParticleAcceleration = blockSharedMemory;
-	// this points at the end of `evolvingParticleAcceleration[]`
-	T *const evolvingParticlePosition     = blockSharedMemory + D * blockDim.x;
 	// this points at the end of `evolvingParticlePosition[]`
-	T *const surroundingParticlePosition  = blockSharedMemory + 2 * D * blockDim.x;
+	T *const surroundingParticlePosition  = blockSharedMemory;
 	// this points at the end of `surroundingParticlePosition[]`
-	T *const surroundingParticleMass      = blockSharedMemory + 3 * D * blockDim.x;
+	T *const surroundingParticleMass      = surroundingParticlePosition + D * blockDim.x;
+    // only blockDim.x elements are left in blockSharedMemory[]
 
-	// fetch position and velocities of particle corresponding to i to store them
-	// into shared memory.
-	// XXX I have to use `threadIdx.x` in the first parameter otherwise I run out
-	// of the vectory boundaries
+    // each thread allocates its position and acceleration vector
+	T evolvingParticleAcceleration[ D ];
+	T evolvingParticlePosition[ D ];
+
+    // evaluate the thread ID
     unsigned i = blockDim.x * blockIdx.x + threadIdx.x;
-//	printf( "b: %u bs: %u t: %u i: %u\n", blockIdx.x, blockDim.x, threadIdx.x, i );
-
-	fetchFromGlobalMemory <D> ( evolvingParticlePosition + D * threadIdx.x, x + D * i ); 
+    // fetch position of the i-th particle 
+	fetchFromGlobalMemory <D> ( evolvingParticlePosition, x + D * i ); 
 
 	// set accelerations to zero
-	setVectorToZero <D> ( evolvingParticleAcceleration + D * threadIdx.x );
+	setVectorToZero <D> ( evolvingParticleAcceleration );
 
 	// temporary variable to hold particle distances
 	// it's not shared among threads but it's private
-	T x_ij[D], accelerationModulus;
+	T x_ij[D], accelerationModulus = (T) 0;
 
 	// N is assumed to be multiple of blockDim.x
 	const size_t numOfIterations = N / blockDim.x;
@@ -171,17 +158,41 @@ void cudaLeapFrogVerlet( T* x, T* v, const T *m ) {
 
 		for( size_t j = 0; j < blockDim.x; ++ j ) {
 			// store particle distance into "buffer" `x_ij[]`
-			distance<D>( evolvingParticlePosition + D * threadIdx.x, surroundingParticlePosition + D * j, x_ij );
+			distance<D>( evolvingParticlePosition, surroundingParticlePosition + D * j, x_ij );
 
 			// update acceleration vector
 			accelerationModulus = basicInteraction<D>( x_ij ) * surroundingParticleMass[j];
-			leapFrogVerletUpdateAccelerations<D> ( evolvingParticleAcceleration + D * threadIdx.x, x_ij, accelerationModulus );
+			leapFrogVerletUpdateAccelerations<D> ( evolvingParticleAcceleration, x_ij, accelerationModulus );
 		}
+        __syncthreads();
 	}
 
-	leapFrogVerletUpdateVelocities<D>( v + D * i, evolvingParticleAcceleration + D * threadIdx.x );
+	leapFrogVerletUpdateVelocities<D>( v + D * i, evolvingParticleAcceleration );
 };
 
 
+template <size_t N, size_t D, typename T>
+__global__
+void cudaLeapFrogVerletNoShared( const T *x, T* v, const T *m ) {
+    unsigned i = blockDim.x * blockIdx.x + threadIdx.x;
+
+	// temporary variable to hold particle distances
+	// it's not shared among threads but it's private
+	T x_ij[D], accelerationModulus;
+    T particleAcceleration[D];
+
+    setVectorToZero<D>( particleAcceleration );
+
+	for( size_t j = 0; j < N; ++ j ) {
+        // store particle distance into "buffer" `x_ij[]`
+        distance<D>( x + D * i, x + D * j, x_ij );
+
+        // update acceleration vector
+        accelerationModulus = basicInteraction<D>( x_ij ) * m[j];
+        leapFrogVerletUpdateAccelerations<D> ( particleAcceleration , x_ij, accelerationModulus );
+    }
+
+	leapFrogVerletUpdateVelocities<D>( v + D * i, particleAcceleration );
+};
 #endif /* CUDAINTEGRATOR_H_ */
 
