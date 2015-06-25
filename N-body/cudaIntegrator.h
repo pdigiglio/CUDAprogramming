@@ -37,7 +37,7 @@ inline T basicInteraction ( const T *x_ij ) {
 	tmp += x_ij[2] * x_ij[2];
 
 	/** @return \f$1/(\sqrt{r^2 + \epsilon^2})^3\f$. */
-	return - 1. / ( tmp * sqrtf( tmp ) );
+    return - 1. / ( tmp * sqrt( tmp ) );
 };
 
 /**
@@ -162,6 +162,16 @@ void cudaLeapFrogVerlet( const T* x, T* v, const T *m ) {
 
 			// update acceleration vector
 			accelerationModulus = basicInteraction<D>( x_ij ) * surroundingParticleMass[j];
+
+//            if( accelerationModulus == 0 ) {
+//                if( x_ij[0] != 0 || x_ij[1] != 0 || x_ij[1] != 0 ) {
+//                    for( short i = 0; i < D; ++ i )
+//                        printf( " x_ij[%d] = %g\n", i, x_ij[i] );
+//                }
+//                return ;
+//
+//            }
+
 			leapFrogVerletUpdateAccelerations<D> ( evolvingParticleAcceleration, x_ij, accelerationModulus );
 		}
         __syncthreads();
