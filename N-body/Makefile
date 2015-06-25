@@ -35,6 +35,9 @@ main: $(patsubst %.cu,%.o,$(wildcard *.cu)) $(patsubst %.c,%.o,$(wildcard *.c)) 
 	$(CUDAMKDEP) $< -o $(patsubst %.o,%.d,$@) --x cu
 	$(CPP) $(CPPFLAGS) --x cu -dc $< -o $@
 
+evaluateMean:%: %.C Makefile
+	g++ -O2 -Wall $< -o $@
+
 # generate documentation with doxygen
 doc:
 	doxygen && make -C latex &
