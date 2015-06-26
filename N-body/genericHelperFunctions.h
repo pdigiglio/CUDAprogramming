@@ -100,7 +100,7 @@ inline void copyConfigurationToDevice (
  * @brief Prints a vector as a column (a row for each entry)
  */
 template <size_t N, size_t D, typename T>
-void printVectorAsColumn( const T *x, FILE *stream = stdout ) {
+inline void printVectorAsColumn( const T *x, FILE *stream = stdout ) {
 	for( size_t i = 0; i < N * D; ++ i ) {
 		fprintf( stream, "%.6g\t", x[i] );
 	}
@@ -114,7 +114,7 @@ void printVectorAsColumn( const T *x, FILE *stream = stdout ) {
  * of the vector).
  */
 template<size_t N, size_t D, typename T>
-void printVectorAsCSV( const T *x, FILE *stream = stdout ) {
+inline void printVectorAsCSV( const T *x, FILE *stream = stdout ) {
     // print header
     fprintf( stream, "x,y,z\n" );
 
@@ -128,7 +128,7 @@ void printVectorAsCSV( const T *x, FILE *stream = stdout ) {
  * @brief Prints a vector as a row.
  */
 template<size_t N, size_t D, typename T>
-void printVectorAsRow( const T *x, unsigned int t, FILE *stream = stdout ) {
+inline void printVectorAsRow( const T *x, unsigned int t, FILE *stream = stdout ) {
 		printf( "%u\t", t );
 		for( unsigned int i = 0; i < D * N; i += 6 ) {
 			printf( "%.6g\t%.6g\t%.6g\t", x[i  ], x[i+1], x[i+2] );
