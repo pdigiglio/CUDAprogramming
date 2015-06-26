@@ -54,10 +54,20 @@ inline void writeToGlobalMemory ( T *x, const T *mySharedArray ) {
 template <size_t D, typename T>
 __device__
 void setVectorToZero( T *x ) {
-	x[0] = (T) 0;
-	x[1] = (T) 0;
-	x[2] = (T) 0;
+    for( size_t d = 0; d < D; ++ d )
+        x[d] = (T) 0;
 }
+
+/**
+ * @brief Specialized template for \f$D=3\f$.
+ */
+//template <size_t D, typename T>
+//__device__
+//void setVectorToZero( T *x ) {
+//	x[0] = (T) 0;
+//	x[1] = (T) 0;
+//	x[2] = (T) 0;
+//}
 
 /**
  * @brief Stores distance among `x_i` and `x_j' into `x_ij`
@@ -65,9 +75,12 @@ void setVectorToZero( T *x ) {
 template <size_t D, typename T>
 __device__ 
 inline void distance ( const T *x_i, const T *x_j, T *x_ij ) {
-    x_ij[0] = x_i[0] - x_j[0];
-    x_ij[1] = x_i[1] - x_j[1];
-    x_ij[2] = x_i[2] - x_j[2];
+    for( size_t d = 0; d < D; ++ d )
+        x_ij[d] = x_i[d] - x_j[d];
+
+//    x_ij[0] = x_i[0] - x_j[0];
+//    x_ij[1] = x_i[1] - x_j[1];
+//    x_ij[2] = x_i[2] - x_j[2];
 };
 
 #endif   /* ----- CUDAARRAYOPERATIONSHELPER_INC  ----- */
