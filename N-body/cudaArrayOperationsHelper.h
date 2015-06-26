@@ -53,12 +53,12 @@ inline void writeToGlobalMemory ( T *x, const T *mySharedArray ) {
  */
 template <size_t D, typename T>
 __device__
-void setVectorToZero( T *x ) {
+inline void setVectorToZero( T *x ) {
     for( size_t d = 0; d < D; ++ d )
         x[d] = (T) 0;
 }
 
-/**
+/*
  * @brief Specialized template for \f$D=3\f$.
  */
 //template <size_t D, typename T>
