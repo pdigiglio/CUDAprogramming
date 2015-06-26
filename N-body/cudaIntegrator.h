@@ -31,14 +31,34 @@ __device__
 inline T basicInteraction ( const T *x_ij ) {
 
 	/** Evaluate \f$\epsilon^2+r^2 = \epsilon^2+x^2 + y^2 + z^2\f$. */
-	T tmp = EPS2;
-	tmp += x_ij[0] * x_ij[0];
-	tmp += x_ij[1] * x_ij[1];
-	tmp += x_ij[2] * x_ij[2];
+	T tmp = (T) EPS2;
+    for( short unsigned d = 0; d < D; ++ d )
+        tmp += x_ij[d] * x_ij[d];
 
 	/** @return \f$1/(\sqrt{r^2 + \epsilon^2})^3\f$. */
-    return - 1. / ( tmp * sqrt( tmp ) );
+    return - 1. / ( tmp * sqrtf( tmp ) );
 };
+
+/**
+ * @brief Specialized template for `double`.
+ *
+ * The function `sqrt()` is used instead of `sqrtf()` and this
+ * _terribly slows down the calculations_.
+ *
+ * @attention Partial specialization is not allowed for standard
+ * C/C++ functions. Actually this is not a specialized `template<>`
+ * but just a different function.
+ *
+ */
+template <unsigned short D>
+__device__
+inline double basicInteraction ( const double * x_ij ) {
+	double tmp = (double) EPS2;
+    for( short unsigned d = 0; d < D; ++ d )
+        tmp += x_ij[d] * x_ij[d];
+
+    return - 1. / ( tmp * sqrt( tmp ) );
+}
 
 /**
  * @brief Helper function to evolve positions by one steps.
