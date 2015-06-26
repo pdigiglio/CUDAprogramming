@@ -12,7 +12,7 @@ CUDAMKDEP  = nvcc $(INCLUDE) -M
 ifeq ($(mode),debug)
 	CPPFLAGS += $(DEBUG)
 else
-	CPPFLAGS += #--optimize 2
+	CPPFLAGS += --optimize 2
 endif
 
 .PHONY: clean distclean doc docshow
