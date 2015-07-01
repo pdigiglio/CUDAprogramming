@@ -52,4 +52,4 @@ clean:
 
 distclean: clean
 	@echo
-	rm --recursive --verbose --force main
+	rm --recursive --verbose --force main evaluateMean
