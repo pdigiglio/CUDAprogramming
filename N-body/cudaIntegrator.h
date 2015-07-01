@@ -36,7 +36,7 @@ inline T basicInteraction ( const T *x_ij ) {
         tmp += x_ij[d] * x_ij[d];
 
 	/** @return \f$1/(\sqrt{r^2 + \epsilon^2})^3\f$. */
-    return - 1. / ( tmp * sqrtf( tmp ) );
+    return - 1.0f / ( tmp * sqrtf( tmp ) );
 };
 
 /**
@@ -57,7 +57,8 @@ inline double basicInteraction ( const double * x_ij ) {
     for( short unsigned d = 0; d < D; ++ d )
         tmp += x_ij[d] * x_ij[d];
 
-    return - 1. / ( tmp * sqrt( tmp ) );
+    // no need for literals here: default is double
+    return - 1.0 / ( tmp * sqrt( tmp ) );
 }
 
 /**
@@ -169,9 +170,9 @@ void cudaLeapFrogVerlet( const T* x, T* v, const T *m ) {
 	const size_t numOfIterations = N / blockDim.x;
 	for( size_t it = 0; it < numOfIterations; ++ it ) {
 		// fetch positions of particle to evaluate the interactions with
-		fetchFromGlobalMemory<D> ( surroundingParticlePosition + D * threadIdx.x, x + D * ( it + threadIdx.x ) );
+		fetchFromGlobalMemory<D> ( surroundingParticlePosition + D * threadIdx.x, x + D * ( it * blockDim.x + threadIdx.x ) );
 		// mass is scalar so only one component per thread needs to be fetched
-		fetchFromGlobalMemory<1> ( surroundingParticleMass + threadIdx.x, m + it + threadIdx.x );
+		fetchFromGlobalMemory<1> ( surroundingParticleMass + threadIdx.x, m + it * blockDim.x + threadIdx.x );
 
 		// sync so that all memory is properly loaded
 		__syncthreads();
