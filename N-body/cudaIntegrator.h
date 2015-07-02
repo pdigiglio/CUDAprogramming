@@ -36,7 +36,8 @@ inline T basicInteraction ( const T *x_ij ) {
         tmp += x_ij[d] * x_ij[d];
 
 	/** @return \f$1/(\sqrt{r^2 + \epsilon^2})^3\f$. */
-    return - 1.0f / ( tmp * sqrtf( tmp ) );
+//    return - 1.0f / ( tmp * sqrtf( tmp ) );
+    return - fsqrtf( tmp * tmp * tmp );
 };
 
 /**
@@ -58,7 +59,8 @@ inline double basicInteraction ( const double * x_ij ) {
         tmp += x_ij[d] * x_ij[d];
 
     // no need for literals here: default is double
-    return - 1.0 / ( tmp * sqrt( tmp ) );
+//    return - 1.0 / ( tmp * sqrt( tmp ) );
+    return - rsqrt( tmp * tmp * tmp );
 }
 
 /**
@@ -70,9 +72,12 @@ inline double basicInteraction ( const double * x_ij ) {
 template <unsigned short D, typename T>
 __device__
 inline void leapFrogVerletUpdatePositions( T *x, const T *v ) {
-	x[0] += v[0] * dt;
-	x[1] += v[1] * dt;
-	x[2] += v[2] * dt;
+    for( short int d = 0; d < D; ++ d )
+        x[d] += v[d] * dt;
+
+//	x[0] += v[0] * dt;
+//	x[1] += v[1] * dt;
+//	x[2] += v[2] * dt;
 };
 
 /**
