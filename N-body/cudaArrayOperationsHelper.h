@@ -31,7 +31,7 @@
  */
 template <size_t D,typename T>
 __device__
-inline void fetchFromGlobalMemory ( T *mySharedArray, const T *x ) {
+inline void fetchFromGlobalMemory ( T *__restrict__ mySharedArray, const T *__restrict__ x ) {
 	for( size_t d = 0; d < D; ++ d )
 		mySharedArray[d] = x[d];
 }
