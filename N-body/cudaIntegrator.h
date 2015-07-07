@@ -37,7 +37,7 @@ inline T basicInteraction ( const T *x_ij ) {
 
 	/** @return \f$1/(\sqrt{r^2 + \epsilon^2})^3\f$. */
 //    return - 1.0f / ( tmp * sqrtf( tmp ) );
-    return - fsqrtf( tmp * tmp * tmp );
+    return - rsqrtf( tmp * tmp * tmp );
 };
 
 /**
@@ -53,7 +53,7 @@ inline T basicInteraction ( const T *x_ij ) {
  */
 template <unsigned short D>
 __device__
-inline double basicInteraction ( const double * x_ij ) {
+inline double basicInteraction ( const double *x_ij ) {
 	double tmp = (double) EPS2;
     for( short unsigned d = 0; d < D; ++ d )
         tmp += x_ij[d] * x_ij[d];
@@ -71,7 +71,7 @@ inline double basicInteraction ( const double * x_ij ) {
  */
 template <unsigned short D, typename T>
 __device__
-inline void leapFrogVerletUpdatePositions( T *x, const T *v ) {
+inline void leapFrogVerletUpdatePositions( T *__restrict__ x, const T *__restrict__ v ) {
     for( short int d = 0; d < D; ++ d )
         x[d] += v[d] * dt;
 
@@ -206,10 +206,12 @@ void cudaLeapFrogVerlet( const T* x, T* v, const T *m ) {
 	leapFrogVerletUpdateVelocities<D>( v + D * i, evolvingParticleAcceleration );
 };
 
-
+/**
+ * @brief Straightforward parallelization of \f$N\f$-body algorithm.
+ */
 template <size_t N, size_t D, typename T>
 __global__
-void cudaLeapFrogVerletNoShared( const T *x, T* v, const T *m ) {
+void cudaLeapFrogVerletNoShared( const T *__restrict__ x, T *__restrict__ v, const T *__restrict__ m ) {
     unsigned i = blockDim.x * blockIdx.x + threadIdx.x;
 
 	// temporary variable to hold particle distances
